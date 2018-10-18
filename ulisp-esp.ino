@@ -1,37 +1,78 @@
-/* uLisp ESP Version 2.4 - www.ulisp.com
-   David Johnson-Davies - www.technoblogy.com - 11th October 2018
+/*  uLisp ESP Version 2.4 - www.ulisp.com
+    David Johnson-Davies - www.technoblogy.com - 11th October 2018
 
-   Licensed under the MIT license: https://opensource.org/licenses/MIT
+    Licensed under the MIT license: https://opensource.org/licenses/MIT
 */
+/*
+  CHANGELOG
+    Version Date       Author Description                                            Marked in code with:
+    ------------------------------------------------------------------------------------------------------
+    Version 3.4a:
+            TODO              external wakeup:
+                                esp_sleep_enable_ext0_wakeup(GPIO_NUM_n, x), x: 1=high, 0= low
+                                esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
+                                esp_deep_sleep_start();
+            -----------------------------------------------------------------------------------------------
+            2018-10-16 Kaef   added sleep                                            Kaef deepsleep
+                              TODO: make sleep as before, add deepsleep function
+            2018-10-16 Kaef   added reset-reason                                     Kaef reset_reason
 
+            2018-10-?? Kaef   sdcard pin change support                              Kaef sdcard
+            2018-10-?? Kaef   LARGE_WORKSPACE patch                                  LARGE_WORKSPACE
+                              with large workspaces ulisp get slow, patched:
+                                newsymbol
+                                eval
+                                compactimage
+            2018-10-?? Kaef   make psram useable for workspace                       Kaef PSRAM
+            2018-10-?? Kaef   lisplibrary patch (#ifdef added)                       Kaef LispLibrary
+            2018-10-?? Kaef   added some Debug messages on ulisp start
+            2018-10-?? Kaef   changed serial-baud to 115200
+                              (just my preferred baud rate, not a problem)
+            2018-10-?? Kaef   change ulisp version to "2.4a (forked)"
+*/
 // Compile options
 
-// #define resetautorun
+#define resetautorun
 #define printfreespace
 #define serialmonitor
-// #define printgcs
-// #define sdcardsupport
-// #define lisplibrary
+#define printgcs
+#define sdcardsupport
+#define lisplibrary
+
+#ifdef sdcardsupport
+//#define SD_CARD_DEBUG
+#endif
 
 // Includes
+#ifdef lisplibrary // Kaef LispLibrary
+#include "LispLibrary.h"
+#endif
 
-// #include "LispLibrary.h"
+// Kaef: BEG deepsleep
+#ifdef ESP32 /* Kaef */
+extern "C" {
+#include <driver/rtc_io.h> // (Kaef deepsleep) rtc_gpio_isolate()
+#include <rom/rtc.h>       // (Kaef reset_reason) rtc_get_reset_reason(int cpuNum)
+}
+#endif
+// Kaef: END deepsleep
+
 #include <setjmp.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <limits.h>
 #include <EEPROM.h>
 #if defined (ESP8266)
-  #include <ESP8266WiFi.h>
+#include <ESP8266WiFi.h>~
 #elif defined (ESP32)
-  #include <WiFi.h>
+#include <WiFi.h>
 #endif
 
 #if defined(sdcardsupport)
-  #include <SD.h>
-  #define SDSIZE 172
+#include <SD.h>
+#define SDSIZE 172
 #else
-  #define SDSIZE 0
+#define SDSIZE 0
 #endif
 
 // C Macros
@@ -67,25 +108,27 @@
 // Constants
 
 const int TRACEMAX = 3; // Number of traced functions
-enum type { ZERO=0, SYMBOL=2, NUMBER=4, STREAM=6, CHARACTER=8, FLOAT=10, STRING=12, PAIR=14 };  // STRING and PAIR must be last
+enum type { ZERO = 0, SYMBOL = 2, NUMBER = 4, STREAM = 6, CHARACTER = 8, FLOAT = 10, STRING = 12, PAIR = 14 }; // STRING and PAIR must be last
 enum token { UNUSED, BRA, KET, QUO, DOT };
 enum stream { SERIALSTREAM, I2CSTREAM, SPISTREAM, SDSTREAM, WIFISTREAM };
 
+// (Kaef reset_reason) RESETREASON added after WIFICONNECT
 enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSURE, SPECIAL_FORMS, QUOTE,
-DEFUN, DEFVAR, SETQ, LOOP, PUSH, POP, INCF, DECF, SETF, DOLIST, DOTIMES, TRACE, UNTRACE, FORMILLIS,
-WITHSERIAL, WITHI2C, WITHSPI, WITHSDCARD, WITHCLIENT, TAIL_FORMS, PROGN, RETURN, IF, COND, WHEN, UNLESS,
-AND, OR, FUNCTIONS, NOT, NULLFN, CONS, ATOM, LISTP, CONSP, SYMBOLP, STREAMP, EQ, CAR, FIRST, CDR, REST,
-CAAR, CADR, SECOND, CDAR, CDDR, CAAAR, CAADR, CADAR, CADDR, THIRD, CDAAR, CDADR, CDDAR, CDDDR, LENGTH,
-LIST, REVERSE, NTH, ASSOC, MEMBER, APPLY, FUNCALL, APPEND, MAPC, MAPCAR, ADD, SUBTRACT, MULTIPLY, DIVIDE,
-MOD, ONEPLUS, ONEMINUS, ABS, RANDOM, MAXFN, MINFN, NOTEQ, NUMEQ, LESS, LESSEQ, GREATER, GREATEREQ, PLUSP,
-MINUSP, ZEROP, ODDP, EVENP, INTEGERP, NUMBERP, FLOATFN, FLOATP, SIN, COS, TAN, ASIN, ACOS, ATAN, SINH,
-COSH, TANH, EXP, SQRT, LOG, EXPT, CEILING, FLOOR, TRUNCATE, ROUND, CHAR, CHARCODE, CODECHAR, CHARACTERP,
-STRINGP, STRINGEQ, STRINGLESS, STRINGGREATER, SORT, STRINGFN, CONCATENATE, SUBSEQ, READFROMSTRING,
-PRINCTOSTRING, PRIN1TOSTRING, LOGAND, LOGIOR, LOGXOR, LOGNOT, ASH, LOGBITP, EVAL, GLOBALS, LOCALS,
-MAKUNBOUND, BREAK, READ, PRIN1, PRINT, PRINC, TERPRI, READBYTE, READLINE, WRITEBYTE, WRITESTRING,
-WRITELINE, RESTARTI2C, GC, ROOM, SAVEIMAGE, LOADIMAGE, CLS, PINMODE, DIGITALREAD, DIGITALWRITE,
-ANALOGREAD, ANALOGWRITE, DELAY, MILLIS, SLEEP, NOTE, EDIT, PPRINT, PPRINTALL, AVAILABLE, WIFISERVER,
-WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, ENDFUNCTIONS };
+                DEFUN, DEFVAR, SETQ, LOOP, PUSH, POP, INCF, DECF, SETF, DOLIST, DOTIMES, TRACE, UNTRACE, FORMILLIS,
+                WITHSERIAL, WITHI2C, WITHSPI, WITHSDCARD, WITHCLIENT, TAIL_FORMS, PROGN, RETURN, IF, COND, WHEN, UNLESS,
+                AND, OR, FUNCTIONS, NOT, NULLFN, CONS, ATOM, LISTP, CONSP, SYMBOLP, STREAMP, EQ, CAR, FIRST, CDR, REST,
+                CAAR, CADR, SECOND, CDAR, CDDR, CAAAR, CAADR, CADAR, CADDR, THIRD, CDAAR, CDADR, CDDAR, CDDDR, LENGTH,
+                LIST, REVERSE, NTH, ASSOC, MEMBER, APPLY, FUNCALL, APPEND, MAPC, MAPCAR, ADD, SUBTRACT, MULTIPLY, DIVIDE,
+                MOD, ONEPLUS, ONEMINUS, ABS, RANDOM, MAXFN, MINFN, NOTEQ, NUMEQ, LESS, LESSEQ, GREATER, GREATEREQ, PLUSP,
+                MINUSP, ZEROP, ODDP, EVENP, INTEGERP, NUMBERP, FLOATFN, FLOATP, SIN, COS, TAN, ASIN, ACOS, ATAN, SINH,
+                COSH, TANH, EXP, SQRT, LOG, EXPT, CEILING, FLOOR, TRUNCATE, ROUND, CHAR, CHARCODE, CODECHAR, CHARACTERP,
+                STRINGP, STRINGEQ, STRINGLESS, STRINGGREATER, SORT, STRINGFN, CONCATENATE, SUBSEQ, READFROMSTRING,
+                PRINCTOSTRING, PRIN1TOSTRING, LOGAND, LOGIOR, LOGXOR, LOGNOT, ASH, LOGBITP, EVAL, GLOBALS, LOCALS,
+                MAKUNBOUND, BREAK, READ, PRIN1, PRINT, PRINC, TERPRI, READBYTE, READLINE, WRITEBYTE, WRITESTRING,
+                WRITELINE, RESTARTI2C, GC, ROOM, SAVEIMAGE, LOADIMAGE, CLS, PINMODE, DIGITALREAD, DIGITALWRITE,
+                ANALOGREAD, ANALOGWRITE, DELAY, MILLIS, SLEEP, NOTE, EDIT, PPRINT, PPRINTALL, AVAILABLE, WIFISERVER,
+                WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, RESETREASON, ENDFUNCTIONS
+              };
 
 // Typedefs
 
@@ -125,27 +168,44 @@ typedef void (*pfun_t)(char);
 #define BUFFERSIZE 34  // Number of bits+2
 
 #if defined(ESP8266)
-  #define PSTR(s) s
-  #define PROGMEM
-  #define WORKSPACESIZE 3072-SDSIZE       /* Cells (8*bytes) */
-  #define EEPROMSIZE 4096                 /* Bytes available for EEPROM */
-  #define SYMBOLTABLESIZE 512             /* Bytes */
-  #define SDCARD_SS_PIN 10
-  uint8_t _end;
-  typedef int BitOrder;
+#define PSTR(s) s
+#define PROGMEM
+#define WORKSPACESIZE 3072-SDSIZE       /* Cells (8*bytes) */
+#define EEPROMSIZE 4096                 /* Bytes available for EEPROM */
+#define SYMBOLTABLESIZE 512             /* Bytes */
+#define SDCARD_SS_PIN 10
+uint8_t _end;
+typedef int BitOrder;
 
 #elif defined(ESP32)
-  #define WORKSPACESIZE 4096-SDSIZE       /* Cells (8*bytes) */
-  #define EEPROMSIZE 4096                 /* Bytes available for EEPROM */
-  #define SYMBOLTABLESIZE 512             /* Bytes */
-  #define analogWrite(x,y) dacWrite((x),(y))
-  #define SDCARD_SS_PIN 13
-  uint8_t _end;
-  typedef int BitOrder;
-
+#define LARGE_WORKSPACE        /* Kaef: large workspace patches */
+const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024 - 64) / 8; /* Kaef PSRAM */
+unsigned int WORKSPACESIZE = (8000 - SDSIZE);     /* Cells (8*bytes) */ /* Kaef PSRAM */
+//#define WORKSPACESIZE 8000-SDSIZE       /* Cells (8*bytes) */
+#define EEPROMSIZE 8192                 /* Bytes available for EEPROM */
+#define SYMBOLTABLESIZE 512             /* Bytes */
+#define analogWrite(x,y) dacWrite((x),(y))
+#ifdef sdcardsupport
+// the names are a bit misleading: here, the gpio-nums has to be configured, not the pin nums!
+#define SDCARD_SS_PIN    5 /* Kaef sdcard */
+#define SDCARD_CLK_IO   18 /* Arduino standard: 18 */
+#define SDCARD_MISO_IO  19 /* Arduino standard: 19 */
+#define SDCARD_MOSI_IO  23 /* Arduino standard: 23 */
+#endif
+uint8_t _end;
+typedef int BitOrder;
 #endif
 
+/* Kaef PSRAM START */
+#if defined ESP8266
 object Workspace[WORKSPACESIZE] WORDALIGNED;
+#elif defined ESP32
+object *Workspace;
+#else
+#error "Platform not supported!"
+#endif
+/* Kaef PSRAM END */
+
 char SymbolTable[SYMBOLTABLESIZE];
 
 // Global variables
@@ -185,8 +245,27 @@ int builtin (char* n);
 // Set up workspace
 
 void initworkspace () {
+  /* Kaef PSRAM START*/
+#if defined ESP32
+  // use psramFound() instead of the define BOARD_HAS_PSRAM
+  pfstring(PSTR("psramFound returns: "), pserial); pint(psramFound(), pserial); pln(pserial);
+  if (psramFound()) {
+    WORKSPACESIZE = PSRAMWORKSPACESIZE;
+    Workspace = (object*)ps_calloc(PSRAMWORKSPACESIZE, sizeof(object));
+  } else {
+    Workspace = (object*)calloc(WORKSPACESIZE, sizeof(object));
+  }
+  if (Workspace == 0) {
+    error(PSTR("Allocating workspace failed, entering endless loop..."));
+    while (true)
+      delay(1000);
+  }
+  memset(Workspace, 0, sizeof(*Workspace));
+#endif
+  /* Kaef PSRAM END */
+
   Freelist = NULL;
-  for (int i=WORKSPACESIZE-1; i>=0; i--) {
+  for (int i = WORKSPACESIZE - 1; i >= 0; i--) {
     object *obj = &Workspace[i];
     car(obj) = NULL;
     cdr(obj) = Freelist;
@@ -248,31 +327,35 @@ object *symbol (symbol_t name) {
 }
 
 object *newsymbol (symbol_t name) {
-  for (int i=WORKSPACESIZE-1; i>=0; i--) {
+#if defined LARGE_WORKSPACE /* Kaef: large workspace patch */
+  return symbol(name); // Kaef: speed patch for large workspaces
+#elif
+  for (int i = WORKSPACESIZE - 1; i >= 0; i--) {
     object *obj = &Workspace[i];
     if (obj->type == SYMBOL && obj->name == name) return obj;
   }
   return symbol(name);
+#endif
 }
 
 object *stream (unsigned char streamtype, unsigned char address) {
   object *ptr = myalloc();
   ptr->type = STREAM;
-  ptr->integer = streamtype<<8 | address;
+  ptr->integer = streamtype << 8 | address;
   return ptr;
 }
 
 // Garbage collection
 
 void markobject (object *obj) {
-  MARK:
+MARK:
   if (obj == NULL) return;
   if (marked(obj)) return;
 
   object* arg = car(obj);
   unsigned int type = obj->type;
   mark(obj);
-  
+
   if (type >= PAIR || type == ZERO) { // cons
     markobject(arg);
     obj = cdr(obj);
@@ -292,41 +375,41 @@ void markobject (object *obj) {
 void sweep () {
   Freelist = NULL;
   Freespace = 0;
-  for (int i=WORKSPACESIZE-1; i>=0; i--) {
+  for (int i = WORKSPACESIZE - 1; i >= 0; i--) {
     object *obj = &Workspace[i];
     if (!marked(obj)) myfree(obj); else unmark(obj);
   }
 }
 
 void gc (object *form, object *env) {
-  #if defined(printgcs)
+#if defined(printgcs)
   int start = Freespace;
-  #endif
+#endif
   markobject(tee);
   markobject(GlobalEnv);
   markobject(GCStack);
   markobject(form);
   markobject(env);
   sweep();
-  #if defined(printgcs)
+#if defined(printgcs)
   pfl(pserial); pserial('{'); pint(Freespace - start, pserial); pserial('}');
-  #endif
+#endif
 }
 
 // Compact image
 
-void movepointer (object *from, object *to) {
-  for (int i=0; i<WORKSPACESIZE; i++) {
+void movepointer (int idxMaxUsedCon, object *from, object *to) {
+  for (int i = 0; i < idxMaxUsedCon; i++) {
     object *obj = &Workspace[i];
     unsigned int type = (obj->type) & ~MARKBIT;
-    if (marked(obj) && (type >= STRING || type==ZERO)) {
-      if (car(obj) == (object *)((uintptr_t)from | MARKBIT)) 
+    if (marked(obj) && (type >= STRING || type == ZERO)) {
+      if (car(obj) == (object *)((uintptr_t)from | MARKBIT))
         car(obj) = (object *)((uintptr_t)to | MARKBIT);
       if (cdr(obj) == from) cdr(obj) = to;
     }
   }
   // Fix strings
-  for (int i=0; i<WORKSPACESIZE; i++) {
+  for (int i = 0; i < idxMaxUsedCon; i++) {
     object *obj = &Workspace[i];
     if (marked(obj) && ((obj->type) & ~MARKBIT) == STRING) {
       obj = cdr(obj);
@@ -337,27 +420,49 @@ void movepointer (object *from, object *to) {
     }
   }
 }
-  
+
 int compactimage (object **arg) {
   markobject(tee);
   markobject(GlobalEnv);
   markobject(GCStack);
   object *firstfree = Workspace;
   while (marked(firstfree)) firstfree++;
-  object *obj = &Workspace[WORKSPACESIZE-1];
+  object *obj = &Workspace[WORKSPACESIZE - 1];
+
+  // Kaef: BEG Looking for last used con in Workspace
+  int idxMaxUsedCon = WORKSPACESIZE;
+  for (int i = WORKSPACESIZE - 1; i >= 0; i--) {
+    if (Workspace[i].type != NULL) {
+      idxMaxUsedCon = i;
+      break;
+    }
+  }
+  // Kaef: END Search for last used cons
+  int count = 0; // Kaef: for debugging, see below
   while (firstfree < obj) {
     if (marked(obj)) {
+      /* */
+      // Kaef: Debugoutput -- I wanted a percent gauge here, but it's not known how many cons need to be processed...
+      //Serial.print(" "); Serial.print((int)(obj - firstfree));
+      //if(++count > 15) { Serial.println(""); count = 0; }
+      pfstring(PSTR("."), pserial); if (++count > 60) {
+        count = 0;
+        pln(pserial);
+      }
+      // */
       car(firstfree) = car(obj);
       cdr(firstfree) = cdr(obj);
       unmark(obj);
-      movepointer(obj, firstfree);
+      movepointer(idxMaxUsedCon, obj, firstfree);
       if (GlobalEnv == obj) GlobalEnv = firstfree;
       if (GCStack == obj) GCStack = firstfree;
       if (*arg == obj) *arg = firstfree;
+      //Serial.println(obj - firstfree);
       while (marked(firstfree)) firstfree++;
     }
     obj--;
   }
+  Serial.println("");
   sweep();
   return firstfree - Workspace;
 }
@@ -367,13 +472,13 @@ int compactimage (object **arg) {
 char *MakeFilename (object *arg) {
   char *buffer = SymbolTop;
   int max = maxbuffer(buffer);
-  buffer[0]='/';
+  buffer[0] = '/';
   int i = 1;
   do {
     char c = nthchar(arg, i);
     if (c == '\0') break;
     buffer[i++] = c;
-  } while (i<max);
+  } while (i < max);
   buffer[i] = '\0';
   return buffer;
 }
@@ -381,18 +486,18 @@ char *MakeFilename (object *arg) {
 // Save-image and load-image
 
 void EpromWriteInt(int *addr, int data) {
-  EEPROM.write((*addr)++, data & 0xFF); EEPROM.write((*addr)++, data>>8 & 0xFF);
+  EEPROM.write((*addr)++, data & 0xFF); EEPROM.write((*addr)++, data >> 8 & 0xFF);
 }
 
 void EpromWritePtr(int *addr, uintptr_t data) {
-  EEPROM.write((*addr)++, data & 0xFF); EEPROM.write((*addr)++, data>>8 & 0xFF);
-  EEPROM.write((*addr)++, data>>16 & 0xFF); EEPROM.write((*addr)++, data>>24 & 0xFF);
+  EEPROM.write((*addr)++, data & 0xFF); EEPROM.write((*addr)++, data >> 8 & 0xFF);
+  EEPROM.write((*addr)++, data >> 16 & 0xFF); EEPROM.write((*addr)++, data >> 24 & 0xFF);
 }
 
 int saveimage (object *arg) {
   unsigned int imagesize = compactimage(&arg);
   // Save to EEPROM
-  int bytesneeded = imagesize*8 + SYMBOLTABLESIZE + 36;
+  int bytesneeded = imagesize * 8 + SYMBOLTABLESIZE + 36;
   if (bytesneeded > EEPROMSIZE) {
     pfstring(PSTR("Error: Image size too large: "), pserial);
     pint(imagesize, pserial); pln(pserial);
@@ -405,11 +510,11 @@ int saveimage (object *arg) {
   EpromWriteInt(&addr, imagesize);
   EpromWritePtr(&addr, (uintptr_t)GlobalEnv);
   EpromWritePtr(&addr, (uintptr_t)GCStack);
-  #if SYMBOLTABLESIZE > BUFFERSIZE
+#if SYMBOLTABLESIZE > BUFFERSIZE
   EpromWritePtr(&addr, (uintptr_t)SymbolTop);
-  for (int i=0; i<SYMBOLTABLESIZE; i++) EEPROM.write(addr++, SymbolTable[i]);
-  #endif
-  for (unsigned int i=0; i<imagesize; i++) {
+  for (int i = 0; i < SYMBOLTABLESIZE; i++) EEPROM.write(addr++, SymbolTable[i]);
+#endif
+  for (unsigned int i = 0; i < imagesize; i++) {
     object *obj = &Workspace[i];
     EpromWritePtr(&addr, (uintptr_t)car(obj));
     EpromWritePtr(&addr, (uintptr_t)cdr(obj));
@@ -420,13 +525,13 @@ int saveimage (object *arg) {
 
 unsigned int EpromReadInt (int *addr) {
   int lo = EEPROM.read((*addr)++); int hi = EEPROM.read((*addr)++);
-  return lo | hi<<8;
+  return lo | hi << 8;
 }
 
 object *EpromReadPtr (int *addr) {
   uint8_t b0 = EEPROM.read((*addr)++); uint8_t b1 = EEPROM.read((*addr)++);
   uint8_t b2 = EEPROM.read((*addr)++); uint8_t b3 = EEPROM.read((*addr)++);
-  return (object *)(b0 | b1<<8 | b2<<16 | b3<<24);
+  return (object *)(b0 | b1 << 8 | b2 << 16 | b3 << 24);
 }
 
 int loadimage (object *filename) {
@@ -438,11 +543,11 @@ int loadimage (object *filename) {
   if (imagesize == 0 || imagesize == 0xFFFF) error(PSTR("No saved image"));
   GlobalEnv = EpromReadPtr(&addr);
   GCStack = EpromReadPtr(&addr);
-  #if SYMBOLTABLESIZE > BUFFERSIZE
+#if SYMBOLTABLESIZE > BUFFERSIZE
   SymbolTop = (char *)EpromReadPtr(&addr);
-  for (int i=0; i<SYMBOLTABLESIZE; i++) SymbolTable[i] = EEPROM.read(addr++);
-  #endif
-  for (int i=0; i<imagesize; i++) {
+  for (int i = 0; i < SYMBOLTABLESIZE; i++) SymbolTable[i] = EEPROM.read(addr++);
+#endif
+  for (int i = 0; i < imagesize; i++) {
     object *obj = &Workspace[i];
     car(obj) = EpromReadPtr(&addr);
     cdr(obj) = EpromReadPtr(&addr);
@@ -452,13 +557,15 @@ int loadimage (object *filename) {
 }
 
 void autorunimage () {
-  object *nullenv = NULL;
-  EEPROM.begin(EEPROMSIZE);
-  int addr = 0;
-  object *autorun = EpromReadPtr(&addr);
-  if (autorun != NULL && (unsigned int)autorun != 0xFFFF) {
-    loadimage(nil);
-    apply(autorun, NULL, &nullenv);
+  if (digitalRead(0) == HIGH) { // Kaef: patch to not load workspace if button 0 is pressed
+    object *nullenv = NULL;
+    EEPROM.begin(EEPROMSIZE);
+    int addr = 0;
+    object *autorun = EpromReadPtr(&addr);
+    if (autorun != NULL && (unsigned int)autorun != 0xFFFF) {
+      loadimage(nil);
+      apply(autorun, NULL, &nullenv);
+    }
   }
 }
 
@@ -474,7 +581,11 @@ void error (const char *string) {
 void error2 (object *symbol, const char *string) {
   pfl(pserial); pfstring(PSTR("Error: "), pserial);
   if (symbol == NULL) pfstring(PSTR("function "), pserial);
-  else { pserial('\''); printobject(symbol, pserial); pfstring(PSTR("' "), pserial); }
+  else {
+    pserial('\'');
+    printobject(symbol, pserial);
+    pfstring(PSTR("' "), pserial);
+  }
   pfstring(string, pserial); pln(pserial);
   GCStack = NULL;
   longjmp(exception, 1);
@@ -485,7 +596,7 @@ void error2 (object *symbol, const char *string) {
 boolean tracing (symbol_t name) {
   int i = 0;
   while (i < TRACEMAX) {
-    if (TraceFn[i] == name) return i+1;
+    if (TraceFn[i] == name) return i + 1;
     i++;
   }
   return 0;
@@ -495,7 +606,11 @@ void trace (symbol_t name) {
   if (tracing(name)) error(PSTR("Already being traced"));
   int i = 0;
   while (i < TRACEMAX) {
-    if (TraceFn[i] == 0) { TraceFn[i] = name; TraceDepth[i] = 0; return; }
+    if (TraceFn[i] == 0) {
+      TraceFn[i] = name;
+      TraceDepth[i] = 0;
+      return;
+    }
     i++;
   }
   error(PSTR("Already tracing 3 functions"));
@@ -504,7 +619,10 @@ void trace (symbol_t name) {
 void untrace (symbol_t name) {
   int i = 0;
   while (i < TRACEMAX) {
-    if (TraceFn[i] == name) { TraceFn[i] = 0; return; }
+    if (TraceFn[i] == name) {
+      TraceFn[i] = 0;
+      return;
+    }
     i++;
   }
   error(PSTR("It wasn't being traced"));
@@ -532,15 +650,15 @@ boolean listp (object *x) {
 
 int toradix40 (char ch) {
   if (ch == 0) return 0;
-  if (ch >= '0' && ch <= '9') return ch-'0'+30;
+  if (ch >= '0' && ch <= '9') return ch - '0' + 30;
   ch = ch | 0x20;
-  if (ch >= 'a' && ch <= 'z') return ch-'a'+1;
+  if (ch >= 'a' && ch <= 'z') return ch - 'a' + 1;
   return -1; // Invalid
 }
 
 int fromradix40 (int n) {
-  if (n >= 1 && n <= 26) return 'a'+n-1;
-  if (n >= 30 && n <= 39) return '0'+n-30;
+  if (n >= 1 && n <= 26) return 'a' + n - 1;
+  if (n >= 30 && n <= 39) return '0' + n - 30;
   return 0;
 }
 
@@ -549,52 +667,52 @@ int pack40 (char *buffer) {
 }
 
 boolean valid40 (char *buffer) {
- return (toradix40(buffer[0]) >= 0 && toradix40(buffer[1]) >= 0 && toradix40(buffer[2]) >= 0);
+  return (toradix40(buffer[0]) >= 0 && toradix40(buffer[1]) >= 0 && toradix40(buffer[2]) >= 0);
 }
 
 int digitvalue (char d) {
-  if (d>='0' && d<='9') return d-'0';
+  if (d >= '0' && d <= '9') return d - '0';
   d = d | 0x20;
-  if (d>='a' && d<='f') return d-'a'+10;
+  if (d >= 'a' && d <= 'f') return d - 'a' + 10;
   return 16;
 }
 
-char *name (object *obj){
+char *name (object *obj) {
   if (obj->type != SYMBOL) error(PSTR("Error in name"));
   symbol_t x = obj->name;
   if (x < ENDFUNCTIONS) return lookupbuiltin(x);
   else if (x >= 64000) return lookupsymbol(x);
   char *buffer = SymbolTop;
   buffer[3] = '\0';
-  for (int n=2; n>=0; n--) {
+  for (int n = 2; n >= 0; n--) {
     buffer[n] = fromradix40(x % 40);
     x = x / 40;
   }
   return buffer;
 }
 
-int integer (object *obj){
+int integer (object *obj) {
   if (!integerp(obj)) error2(obj, PSTR("is not an integer"));
   return obj->integer;
 }
 
-float fromfloat (object *obj){
+float fromfloat (object *obj) {
   if (!floatp(obj)) error2(obj, PSTR("is not a float"));
   return obj->single_float;
 }
 
-float intfloat (object *obj){
+float intfloat (object *obj) {
   if (integerp(obj)) return obj->integer;
   if (!floatp(obj)) error2(obj, PSTR("is not an integer or float"));
   return obj->single_float;
 }
 
-int fromchar (object *obj){
+int fromchar (object *obj) {
   if (!characterp(obj)) error2(obj, PSTR("is not a character"));
   return obj->integer;
 }
 
-int istream (object *obj){
+int istream (object *obj) {
   if (!streamp(obj)) error2(obj, PSTR("is not a stream"));
   return obj->integer;
 }
@@ -628,7 +746,7 @@ int listlength (object *list) {
 object *assoc (object *key, object *list) {
   while (list != NULL) {
     object *pair = first(list);
-    if (eq(key,car(pair))) return pair;
+    if (eq(key, car(pair))) return pair;
     list = cdr(list);
   }
   return nil;
@@ -639,7 +757,7 @@ object *delassoc (object *key, object **alist) {
   object *prev = NULL;
   while (list != NULL) {
     object *pair = first(list);
-    if (eq(key,car(pair))) {
+    if (eq(key, car(pair))) {
       if (prev == NULL) *alist = cdr(list);
       else cdr(prev) = cdr(list);
       return key;
@@ -653,15 +771,15 @@ object *delassoc (object *key, object **alist) {
 // String utilities
 
 void indent (int spaces, pfun_t pfun) {
-  for (int i=0; i<spaces; i++) pfun(' ');
+  for (int i = 0; i < spaces; i++) pfun(' ');
 }
 
 void buildstring (char ch, int *chars, object **head) {
   static object* tail;
   static uint8_t shift;
   if (*chars == 0) {
-    shift = (sizeof(int)-1)*8;
-    *chars = ch<<shift;
+    shift = (sizeof(int) - 1) * 8;
+    *chars = ch << shift;
     object *cell = myalloc();
     if (*head == NULL) *head = cell; else tail->car = cell;
     cell->car = NULL;
@@ -669,7 +787,7 @@ void buildstring (char ch, int *chars, object **head) {
     tail = cell;
   } else {
     shift = shift - 8;
-    *chars = *chars | ch<<shift;
+    *chars = *chars | ch << shift;
     tail->integer = *chars;
     if (shift == 0) *chars = 0;
   }
@@ -696,8 +814,8 @@ int stringlength (object *form) {
   form = cdr(form);
   while (form != NULL) {
     int chars = form->integer;
-    for (int i=(sizeof(int)-1)*8; i>=0; i=i-8) {
-      if (chars>>i & 0xFF) length++;
+    for (int i = (sizeof(int) - 1) * 8; i >= 0; i = i - 8) {
+      if (chars >> i & 0xFF) length++;
     }
     form = car(form);
   }
@@ -707,18 +825,24 @@ int stringlength (object *form) {
 char nthchar (object *string, int n) {
   object *arg = cdr(string);
   int top;
-  if (sizeof(int) == 4) { top = n>>2; n = 3 - (n&3); }
-  else { top = n>>1; n = 1 - (n&1); }
-  for (int i=0; i<top; i++) {
+  if (sizeof(int) == 4) {
+    top = n >> 2;
+    n = 3 - (n & 3);
+  }
+  else {
+    top = n >> 1;
+    n = 1 - (n & 1);
+  }
+  for (int i = 0; i < top; i++) {
     if (arg == NULL) return 0;
     arg = car(arg);
   }
   if (arg == NULL) return 0;
-  return (arg->integer)>>(n*8) & 0xFF;
+  return (arg->integer) >> (n * 8) & 0xFF;
 }
 
 char *cstringbuf (object *arg) {
-  cstring(arg, SymbolTop, SYMBOLTABLESIZE-(SymbolTop-SymbolTable));
+  cstring(arg, SymbolTop, SYMBOLTABLESIZE - (SymbolTop - SymbolTable));
   return SymbolTop;
 }
 
@@ -727,10 +851,10 @@ char *cstring (object *form, char *buffer, int buflen) {
   form = cdr(form);
   while (form != NULL) {
     int chars = form->integer;
-    for (int i=(sizeof(int)-1)*8; i>=0; i=i-8) {
-      char ch = chars>>i & 0xFF;
+    for (int i = (sizeof(int) - 1) * 8; i >= 0; i = i - 8) {
+      char ch = chars >> i & 0xFF;
       if (ch) {
-        if (index >= buflen-1) error(PSTR("no room for string"));
+        if (index >= buflen - 1) error(PSTR("no room for string"));
         buffer[index++] = ch;
       }
     }
@@ -784,13 +908,13 @@ object *findtwin (object *var, object *env) {
 }
 
 // Handling closures
-  
+
 object *closure (int tc, object *fname, object *state, object *function, object *args, object **env) {
   int trace = 0;
   if (fname != NULL) trace = tracing(fname->name);
   if (trace) {
-    indent(TraceDepth[trace-1]<<1, pserial);
-    pint(TraceDepth[trace-1]++, pserial);
+    indent(TraceDepth[trace - 1] << 1, pserial);
+    pint(TraceDepth[trace - 1]++, pserial);
     pserial(':'); pserial(' '); pserial('('); printobject(fname, pserial);
   }
   object *params = first(function);
@@ -816,13 +940,19 @@ object *closure (int tc, object *fname, object *state, object *function, object 
     }
     object *pair = findtwin(var, *env);
     if (tc && (pair != NULL)) cdr(pair) = value;
-    else push(cons(var,value), *env);
+    else push(cons(var, value), *env);
     params = cdr(params);
-    if (trace) { pserial(' '); printobject(value, pserial); }
+    if (trace) {
+      pserial(' ');
+      printobject(value, pserial);
+    }
   }
   if (params != NULL) error2(fname, PSTR("has too few parameters"));
   if (args != NULL) error2(fname, PSTR("has too many parameters"));
-  if (trace) { pserial(')'); pln(pserial); }
+  if (trace) {
+    pserial(')');
+    pln(pserial);
+  }
   // Do an implicit progn
   return tf_progn(function, *env);
 }
@@ -832,8 +962,8 @@ object *apply (object *function, object *args, object **env) {
     symbol_t name = function->name;
     int nargs = listlength(args);
     if (name >= ENDFUNCTIONS) error2(function, PSTR("is not valid here"));
-    if (nargs<lookupmin(name)) error2(function, PSTR("has too few arguments"));
-    if (nargs>lookupmax(name)) error2(function, PSTR("has too many arguments"));
+    if (nargs < lookupmin(name)) error2(function, PSTR("has too few arguments"));
+    if (nargs > lookupmax(name)) error2(function, PSTR("has too many arguments"));
     return ((fn_ptr_type)lookupfn(name))(args, *env);
   }
   if (listp(function) && issymbol(car(function), LAMBDA)) {
@@ -928,14 +1058,19 @@ void I2Cstop(uint8_t read) {
 
 // Streams
 
-inline int spiread () { return SPI.transfer(0); }
+inline int spiread () {
+  return SPI.transfer(0);
+}
 #if defined(ESP32) || defined(ESP8266)
-inline int serial1read () { while (!Serial1.available()) testescape(); return Serial1.read(); }
+inline int serial1read () {
+  while (!Serial1.available()) testescape();
+  return Serial1.read();
+}
 #endif
 #if defined(sdcardsupport)
 File SDpfile, SDgfile;
 inline int SDread () {
-  if (LastChar) { 
+  if (LastChar) {
     char temp = LastChar;
     LastChar = 0;
     return temp;
@@ -948,7 +1083,7 @@ WiFiClient client;
 WiFiServer server(80);
 
 inline int WiFiread () {
-  if (LastChar) { 
+  if (LastChar) {
     char temp = LastChar;
     LastChar = 0;
     return temp;
@@ -957,16 +1092,16 @@ inline int WiFiread () {
 }
 
 void serialbegin (int address, int baud) {
-  #if defined(ESP32) || defined(ESP8266)
-  if (address == 1) Serial1.begin((long)baud*100);
+#if defined(ESP32) || defined(ESP8266)
+  if (address == 1) Serial1.begin((long)baud * 100);
   else error(PSTR("'with-serial' port not supported"));
-  #endif
+#endif
 }
 
 void serialend (int address) {
-  #if defined(ESP32) || defined(ESP8266)
+#if defined(ESP32) || defined(ESP8266)
   if (address == 1) Serial1.end();
-  #endif
+#endif
 }
 
 gfun_t gstreamfun (object *args) {
@@ -975,7 +1110,7 @@ gfun_t gstreamfun (object *args) {
   gfun_t gfun = gserial;
   if (args != NULL) {
     int stream = istream(first(args));
-    streamtype = stream>>8; address = stream & 0xFF;
+    streamtype = stream >> 8; address = stream & 0xFF;
   }
   if (streamtype == I2CSTREAM) gfun = (gfun_t)I2Cread;
   else if (streamtype == SPISTREAM) gfun = spiread;
@@ -983,18 +1118,24 @@ gfun_t gstreamfun (object *args) {
     if (address == 0) gfun = gserial;
     else if (address == 1) gfun = serial1read;
   }
-  #if defined(sdcardsupport)
+#if defined(sdcardsupport)
   else if (streamtype == SDSTREAM) gfun = (gfun_t)SDread;
-  #endif
+#endif
   else if (streamtype == WIFISTREAM) gfun = (gfun_t)WiFiread;
   else error(PSTR("Unknown stream type"));
   return gfun;
 }
 
-inline void spiwrite (char c) { SPI.transfer(c); }
-inline void WiFiwrite (char c) { client.write(c); }
+inline void spiwrite (char c) {
+  SPI.transfer(c);
+}
+inline void WiFiwrite (char c) {
+  client.write(c);
+}
 #if defined(sdcardsupport)
-inline void SDwrite (char c) { SDpfile.write(c); }
+inline void SDwrite (char c) {
+  SDpfile.write(c);
+}
 #endif
 
 pfun_t pstreamfun (object *args) {
@@ -1003,16 +1144,16 @@ pfun_t pstreamfun (object *args) {
   pfun_t pfun = pserial;
   if (args != NULL && first(args) != NULL) {
     int stream = istream(first(args));
-    streamtype = stream>>8; address = stream & 0xFF;
+    streamtype = stream >> 8; address = stream & 0xFF;
   }
   if (streamtype == I2CSTREAM) pfun = (pfun_t)I2Cwrite;
   else if (streamtype == SPISTREAM) pfun = spiwrite;
   else if (streamtype == SERIALSTREAM) {
     if (address == 0) pfun = pserial;
-  }   
-  #if defined(sdcardsupport)
+  }
+#if defined(sdcardsupport)
   else if (streamtype == SDSTREAM) pfun = (pfun_t)SDwrite;
-  #endif
+#endif
   else if (streamtype == WIFISTREAM) pfun = (pfun_t)WiFiwrite;
   else error(PSTR("unknown stream type"));
   return pfun;
@@ -1022,18 +1163,18 @@ pfun_t pstreamfun (object *args) {
 
 void checkanalogread (int pin) {
 #if defined(ESP8266)
-  if (pin!=17) error(PSTR("'analogread' invalid pin"));
+  if (pin != 17) error(PSTR("'analogread' invalid pin"));
 #elif defined(ESP32)
-  if (!(pin==0 || pin==2 || pin==4 || (pin>=12 && pin<=15) || (pin>=25 && pin<=27) || (pin>=32 && pin<=36) || pin==39))
+  if (!(pin == 0 || pin == 2 || pin == 4 || (pin >= 12 && pin <= 15) || (pin >= 25 && pin <= 27) || (pin >= 32 && pin <= 36) || pin == 39))
     error(PSTR("'analogread' invalid pin"));
 #endif
 }
 
 void checkanalogwrite (int pin) {
 #if defined(ESP8266)
-  if (!(pin>=0 && pin<=16)) error(PSTR("'analogwrite' invalid pin"));
+  if (!(pin >= 0 && pin <= 16)) error(PSTR("'analogwrite' invalid pin"));
 #elif defined(ESP32)
-  if (!(pin>=25 && pin<=26)) error(PSTR("'analogwrite' invalid pin"));
+  if (!(pin >= 25 && pin <= 26)) error(PSTR("'analogwrite' invalid pin"));
 #endif
 }
 
@@ -1047,12 +1188,12 @@ void noTone (int pin) {
   (void) pin;
 }
 
-const int scale[] PROGMEM = {4186,4435,4699,4978,5274,5588,5920,6272,6645,7040,7459,7902};
+const int scale[] PROGMEM = {4186, 4435, 4699, 4978, 5274, 5588, 5920, 6272, 6645, 7040, 7459, 7902};
 
 void playnote (int pin, int note, int octave) {
-  int prescaler = 8 - octave - note/12;
-  if (prescaler<0 || prescaler>8) error(PSTR("'note' octave out of range"));
-  tone(pin, scale[note%12]>>prescaler);
+  int prescaler = 8 - octave - note / 12;
+  if (prescaler < 0 || prescaler > 8) error(PSTR("'note' octave out of range"));
+  tone(pin, scale[note % 12] >> prescaler);
 }
 
 void nonote (int pin) {
@@ -1064,7 +1205,25 @@ void nonote (int pin) {
 void initsleep () { }
 
 void sleep (int secs) {
+  // Kaef: BEG deepsleep
+#ifdef ESP32
+#ifdef sdcardsupport
+  pfstring(PSTR("Close sdcard"), pserial); //Serial.flush();
+  SDpfile.close(); SDgfile.close();
+#endif
+  // Isolate GPIO12 pin from external circuits. This is needed for modules
+  // which have an external pull-up resistor on GPIO12 (such as ESP32-WROVER)
+  // to minimize current consumption.
+  // Other pins should be isolated too.
+  rtc_gpio_isolate(GPIO_NUM_0);
+  rtc_gpio_isolate(GPIO_NUM_12);
+
+  esp_sleep_enable_timer_wakeup(secs * 1E6);
+  esp_deep_sleep_start();
+  // Kaef: END deepsleep
+#else
   delay(1000 * secs);
+#endif
 }
 
 // Special forms
@@ -1079,8 +1238,11 @@ object *sp_defun (object *args, object *env) {
   object *var = first(args);
   if (var->type != SYMBOL) error2(var, PSTR("is not a symbol"));
   object *val = cons(symbol(LAMBDA), cdr(args));
-  object *pair = value(var->name,GlobalEnv);
-  if (pair != NULL) { cdr(pair) = val; return var; }
+  object *pair = value(var->name, GlobalEnv);
+  if (pair != NULL) {
+    cdr(pair) = val;
+    return var;
+  }
   push(cons(var, val), GlobalEnv);
   return var;
 }
@@ -1091,8 +1253,11 @@ object *sp_defvar (object *args, object *env) {
   object *val = NULL;
   args = cdr(args);
   if (args != NULL) val = eval(first(args), env);
-  object *pair = value(var->name,GlobalEnv);
-  if (pair != NULL) { cdr(pair) = val; return var; }
+  object *pair = value(var->name, GlobalEnv);
+  if (pair != NULL) {
+    cdr(pair) = val;
+    return var;
+  }
   push(cons(var, val), GlobalEnv);
   return var;
 }
@@ -1111,7 +1276,7 @@ object *sp_loop (object *args, object *env) {
     yield();
     args = start;
     while (args != NULL) {
-      object *result = eval(car(args),env);
+      object *result = eval(car(args), env);
       if (tstflag(RETURNFLAG)) {
         clrflag(RETURNFLAG);
         return result;
@@ -1140,7 +1305,7 @@ object *sp_pop (object *args, object *env) {
 object *sp_incf (object *args, object *env) {
   object **loc = place(first(args), env);
   args = cdr(args);
-  
+
   object *x = *loc;
   object *inc = (args != NULL) ? eval(first(args), env) : NULL;
 
@@ -1173,7 +1338,7 @@ object *sp_incf (object *args, object *env) {
 object *sp_decf (object *args, object *env) {
   object **loc = place(first(args), env);
   args = cdr(args);
-  
+
   object *x = *loc;
   object *dec = (args != NULL) ? eval(first(args), env) : NULL;
 
@@ -1217,14 +1382,14 @@ object *sp_dolist (object *args, object *env) {
   object *list = eval(second(params), env);
   if (!listp(list)) error(PSTR("'dolist' argument is not a list"));
   push(list, GCStack); // Don't GC the list
-  object *pair = cons(var,nil);
-  push(pair,env);
+  object *pair = cons(var, nil);
+  push(pair, env);
   params = cdr(cdr(params));
   object *forms = cdr(args);
   while (list != NULL) {
     cdr(pair) = first(list);
     list = cdr(list);
-    result = eval(tf_progn(forms,env), env);
+    result = eval(tf_progn(forms, env), env);
     if (tstflag(RETURNFLAG)) {
       clrflag(RETURNFLAG);
       return result;
@@ -1243,13 +1408,13 @@ object *sp_dotimes (object *args, object *env) {
   int count = integer(eval(second(params), env));
   int index = 0;
   params = cdr(cdr(params));
-  object *pair = cons(var,number(0));
-  push(pair,env);
+  object *pair = cons(var, number(0));
+  push(pair, env);
   object *forms = cdr(args);
   while (index < count) {
     cdr(pair) = number(index);
     index++;
-    result = eval(tf_progn(forms,env), env);
+    result = eval(tf_progn(forms, env), env);
     if (tstflag(RETURNFLAG)) {
       clrflag(RETURNFLAG);
       return result;
@@ -1263,8 +1428,8 @@ object *sp_dotimes (object *args, object *env) {
 object *sp_trace (object *args, object *env) {
   (void) env;
   while (args != NULL) {
-      trace(first(args)->name);
-      args = cdr(args);
+    trace(first(args)->name);
+    args = cdr(args);
   }
   int i = 0;
   while (i < TRACEMAX) {
@@ -1297,7 +1462,7 @@ object *sp_formillis (object *args, object *env) {
   unsigned long start = millis();
   unsigned long now, total = 0;
   if (param != NULL) total = integer(first(param));
-  eval(tf_progn(cdr(args),env), env);
+  eval(tf_progn(cdr(args), env), env);
   do {
     now = millis() - start;
     testescape();
@@ -1314,10 +1479,10 @@ object *sp_withserial (object *args, object *env) {
   int baud = 96;
   if (params != NULL) baud = integer(eval(first(params), env));
   object *pair = cons(var, stream(SERIALSTREAM, address));
-  push(pair,env);
+  push(pair, env);
   serialbegin(address, baud);
   object *forms = cdr(args);
-  object *result = eval(tf_progn(forms,env), env);
+  object *result = eval(tf_progn(forms, env), env);
   serialend(address);
   return result;
 }
@@ -1336,9 +1501,9 @@ object *sp_withi2c (object *args, object *env) {
   }
   I2Cinit(1); // Pullups
   object *pair = cons(var, (I2Cstart(address, read)) ? stream(I2CSTREAM, address) : nil);
-  push(pair,env);
+  push(pair, env);
   object *forms = cdr(args);
-  object *result = eval(tf_progn(forms,env), env);
+  object *result = eval(tf_progn(forms, env), env);
   I2Cstop(read);
   return result;
 }
@@ -1349,15 +1514,15 @@ object *sp_withspi (object *args, object *env) {
   int pin = integer(eval(second(params), env));
   int divider = 0, mode = 0, bitorder = 1;
   object *pair = cons(var, stream(SPISTREAM, pin));
-  push(pair,env);
+  push(pair, env);
   SPI.begin();
   params = cddr(params);
   if (params != NULL) {
     int d = integer(eval(first(params), env));
-    if (d<1 || d>7) error(PSTR("'with-spi' invalid divider"));
+    if (d < 1 || d > 7) error(PSTR("'with-spi' invalid divider"));
     if (d == 7) divider = 3;
-    else if (d & 1) divider = (d>>1) + 4;
-    else divider = (d>>1) - 1;
+    else if (d & 1) divider = (d >> 1) + 4;
+    else divider = (d >> 1) - 1;
     params = cdr(params);
     if (params != NULL) {
       bitorder = (eval(first(params), env) == NULL);
@@ -1371,7 +1536,7 @@ object *sp_withspi (object *args, object *env) {
   SPI.setClockDivider(divider);
   SPI.setDataMode(mode);
   object *forms = cdr(args);
-  object *result = eval(tf_progn(forms,env), env);
+  object *result = eval(tf_progn(forms, env), env);
   digitalWrite(pin, HIGH);
   SPI.end();
   return result;
@@ -1383,6 +1548,13 @@ object *sp_withsdcard (object *args, object *env) {
   object *var = first(params);
   object *filename = eval(second(params), env);
   params = cddr(params);
+
+  // Kaef sdcard
+  //SPI.begin(18, 19, 23, SDCARD_SS_PIN); // sck, miso, mosi, ss // Kaef, my (aka standard arduino) sd-card connections
+  //SPI.begin(14, 2, 15, SDCARD_SS_PIN); // sck, miso, mosi, ss  // Kaef, David's ds-card connections
+#if ((defined SDCARD_CLK_IO) && (defined SDCARD_MISO_IO) && (defined SDCARD_MOSI_IO) && (defined SDCARD_SS_PIN))
+  SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, SDCARD_SS_PIN);
+#endif
   SD.begin();
   int mode = 0;
   if (params != NULL && first(params) != NULL) mode = integer(first(params));
@@ -1396,9 +1568,9 @@ object *sp_withsdcard (object *args, object *env) {
     if (!SDgfile) error(PSTR("Problem reading from SD card"));
   }
   object *pair = cons(var, stream(SDSTREAM, 1));
-  push(pair,env);
+  push(pair, env);
   object *forms = cdr(args);
-  object *result = eval(tf_progn(forms,env), env);
+  object *result = eval(tf_progn(forms, env), env);
   if (mode >= 1) SDpfile.close(); else SDgfile.close();
   return result;
 #else
@@ -1428,9 +1600,9 @@ object *sp_withclient (object *args, object *env) {
     n = 1;
   }
   object *pair = cons(var, stream(WIFISTREAM, n));
-  push(pair,env);
+  push(pair, env);
   object *forms = cdr(args);
-  object *result = eval(tf_progn(forms,env), env);
+  object *result = eval(tf_progn(forms, env), env);
   client.stop();
   return result;
 }
@@ -1441,7 +1613,7 @@ object *tf_progn (object *args, object *env) {
   if (args == NULL) return nil;
   object *more = cdr(args);
   while (more != NULL) {
-    object *result = eval(car(args),env);
+    object *result = eval(car(args), env);
     if (tstflag(RETURNFLAG)) return result;
     args = more;
     more = cdr(args);
@@ -1474,13 +1646,13 @@ object *tf_cond (object *args, object *env) {
 }
 
 object *tf_when (object *args, object *env) {
-  if (eval(first(args), env) != nil) return tf_progn(cdr(args),env);
+  if (eval(first(args), env) != nil) return tf_progn(cdr(args), env);
   else return nil;
 }
 
 object *tf_unless (object *args, object *env) {
   if (eval(first(args), env) != nil) return nil;
-  else return tf_progn(cdr(args),env);
+  else return tf_progn(cdr(args), env);
 }
 
 object *tf_and (object *args, object *env) {
@@ -1514,7 +1686,7 @@ object *fn_not (object *args, object *env) {
 
 object *fn_cons (object *args, object *env) {
   (void) env;
-  return cons(first(args),second(args));
+  return cons(first(args), second(args));
 }
 
 object *fn_atom (object *args, object *env) {
@@ -1640,7 +1812,7 @@ object *fn_reverse (object *args, object *env) {
   if (!listp(list)) error(PSTR("'reverse' argument is not a list"));
   object *result = NULL;
   while (list != NULL) {
-    push(first(list),result);
+    push(first(list), result);
     list = cdr(list);
   }
   return result;
@@ -1664,7 +1836,7 @@ object *fn_assoc (object *args, object *env) {
   object *key = first(args);
   object *list = second(args);
   if (!listp(list)) error(PSTR("'assoc' second argument is not a list"));
-  return assoc(key,list);
+  return assoc(key, list);
 }
 
 object *fn_member (object *args, object *env) {
@@ -1673,7 +1845,7 @@ object *fn_member (object *args, object *env) {
   object *list = second(args);
   if (!listp(list)) error(PSTR("'member' second argument is not a list"));
   while (list != NULL) {
-    if (eq(item,car(list))) return list;
+    if (eq(item, car(list))) return list;
     list = cdr(list);
   }
   return nil;
@@ -1703,7 +1875,7 @@ object *fn_append (object *args, object *env) {
     object *list = first(args);
     if (!listp(list)) error(PSTR("'append' argument is not a list"));
     while (list != NULL) {
-      object *obj = cons(first(list),NULL);
+      object *obj = cons(first(list), NULL);
       if (head == NULL) {
         head = obj;
         tail = obj;
@@ -1728,13 +1900,13 @@ object *fn_mapc (object *args, object *env) {
     list2 = car(list2);
     if (!listp(list2)) error(PSTR("'mapc' third argument is not a list"));
     while (list1 != NULL && list2 != NULL) {
-      apply(function, cons(car(list1),cons(car(list2),NULL)), &env);
+      apply(function, cons(car(list1), cons(car(list2), NULL)), &env);
       list1 = cdr(list1);
       list2 = cdr(list2);
     }
   } else {
     while (list1 != NULL) {
-      apply(function, cons(car(list1),NULL), &env);
+      apply(function, cons(car(list1), NULL), &env);
       list1 = cdr(list1);
     }
   }
@@ -1754,11 +1926,11 @@ object *fn_mapcar (object *args, object *env) {
   object *tail = NULL;
   if (list2 != NULL) {
     while (list1 != NULL && list2 != NULL) {
-      object *result = apply(function, cons(car(list1),cons(car(list2),NULL)), &env);
-      object *obj = cons(result,NULL);
+      object *result = apply(function, cons(car(list1), cons(car(list2), NULL)), &env);
+      object *obj = cons(result, NULL);
       if (head == NULL) {
         head = obj;
-        push(head,GCStack);
+        push(head, GCStack);
         tail = obj;
       } else {
         cdr(tail) = obj;
@@ -1770,11 +1942,11 @@ object *fn_mapcar (object *args, object *env) {
     pop(GCStack);
   } else if (list1 != NULL) {
     while (list1 != NULL) {
-      object *result = apply(function, cons(car(list1),NULL), &env);
-      object *obj = cons(result,NULL);
+      object *result = apply(function, cons(car(list1), NULL), &env);
+      object *obj = cons(result, NULL);
       if (head == NULL) {
         head = obj;
-        push(head,GCStack);
+        push(head, GCStack);
         tail = obj;
       } else {
         cdr(tail) = obj;
@@ -1807,8 +1979,12 @@ object *fn_add (object *args, object *env) {
     if (floatp(arg)) return add_floats(args, (float)result);
 
     int val = integer(arg);
-    if (val < 1) { if (INT_MIN - val > result) return add_floats(args, (float)result); }
-    else { if (INT_MAX - val < result) return add_floats(args, (float)result); }
+    if (val < 1) {
+      if (INT_MIN - val > result) return add_floats(args, (float)result);
+    }
+    else {
+      if (INT_MAX - val < result) return add_floats(args, (float)result);
+    }
     result = result + val;
     args = cdr(args);
   }
@@ -1849,8 +2025,12 @@ object *fn_subtract (object *args, object *env) {
       if (floatp(arg)) return subtract_floats(args, result);
 
       int val = integer(car(args));
-      if (val < 1) { if (INT_MAX + val < result) return subtract_floats(args, result); }
-      else { if (INT_MIN + val > result) return subtract_floats(args, result); }
+      if (val < 1) {
+        if (INT_MAX + val < result) return subtract_floats(args, result);
+      }
+      else {
+        if (INT_MIN + val > result) return subtract_floats(args, result);
+      }
       result = result - val;
       args = cdr(args);
     }
@@ -1860,7 +2040,7 @@ object *fn_subtract (object *args, object *env) {
 
 object *multiply_floats(object *args, float fresult) {
   while (args != NULL) {
-   object *arg = car(args);
+    object *arg = car(args);
     fresult = fresult * intfloat(arg);
     args = cdr(args);
   }
@@ -1870,7 +2050,7 @@ object *multiply_floats(object *args, float fresult) {
 object *fn_multiply (object *args, object *env) {
   (void) env;
   int result = 1;
-  while (args != NULL){
+  while (args != NULL) {
     object *arg = car(args);
 
     if (floatp(arg)) return multiply_floats(args, result);
@@ -1878,7 +2058,7 @@ object *fn_multiply (object *args, object *env) {
     int64_t val = result * (int64_t)integer(arg);
     if ((val > INT_MAX) || (val < INT_MIN)) return multiply_floats(args, result);
     result = val;
-    
+
     args = cdr(args);
   }
   return number(result);
@@ -1911,7 +2091,7 @@ object *fn_divide (object *args, object *env) {
       else if (i == 1) return number(1);
       else return makefloat(1.0 / i);
     }
-  }    
+  }
   // Multiple arguments
   if (floatp(arg)) return divide_floats(args, fromfloat(arg));
   else {
@@ -1920,7 +2100,7 @@ object *fn_divide (object *args, object *env) {
       arg = car(args);
       if (floatp(arg)) {
         return divide_floats(args, result);
-      } else {       
+      } else {
         int i = integer(arg);
         if (i == 0) error(PSTR("Division by zero"));
         if ((result % i) != 0) return divide_floats(args, result);
@@ -1928,8 +2108,8 @@ object *fn_divide (object *args, object *env) {
         result = result / i;
         args = cdr(args);
       }
-    } 
-    return number(result); 
+    }
+    return number(result);
   }
 }
 
@@ -1942,14 +2122,14 @@ object *fn_mod (object *args, object *env) {
     if (divisor == 0) error(PSTR("Division by zero"));
     int dividend = integer(arg1);
     int remainder = dividend % divisor;
-    if ((dividend<0) != (divisor<0)) remainder = remainder + divisor;
+    if ((dividend < 0) != (divisor < 0)) remainder = remainder + divisor;
     return number(remainder);
   } else {
     float fdivisor = intfloat(arg2);
     if (fdivisor == 0.0) error(PSTR("Division by zero"));
     float fdividend = intfloat(arg1);
     float fremainder = fmod(fdividend , fdivisor);
-    if ((fdividend<0) != (fdivisor<0)) fremainder = fremainder + fdivisor;
+    if ((fdividend < 0) != (fdivisor < 0)) fremainder = fremainder + fdivisor;
     return makefloat(fremainder);
   }
 }
@@ -1991,7 +2171,7 @@ object *fn_random (object *args, object *env) {
   (void) env;
   object *arg = first(args);
   if (integerp(arg)) return number(random(integer(arg)));
-  else return makefloat((float)rand()/(float)(RAND_MAX/fromfloat(arg)));
+  else return makefloat((float)rand() / (float)(RAND_MAX / fromfloat(arg)));
 }
 
 object *fn_maxfn (object *args, object *env) {
@@ -2003,7 +2183,7 @@ object *fn_maxfn (object *args, object *env) {
     if (integerp(result) && integerp(arg)) {
       if ((integer(arg) > integer(result))) result = arg;
     } else if ((intfloat(arg) > intfloat(result))) result = arg;
-    args = cdr(args); 
+    args = cdr(args);
   }
   return result;
 }
@@ -2017,7 +2197,7 @@ object *fn_minfn (object *args, object *env) {
     if (integerp(result) && integerp(arg)) {
       if ((integer(arg) < integer(result))) result = arg;
     } else if ((intfloat(arg) < intfloat(result))) result = arg;
-    args = cdr(args); 
+    args = cdr(args);
   }
   return result;
 }
@@ -2257,7 +2437,7 @@ object *fn_expt (object *args, object *env) {
   object *arg1 = first(args); object *arg2 = second(args);
   float float1 = intfloat(arg1);
   float value = log(abs(float1)) * intfloat(arg2);
-  if (integerp(arg1) && integerp(arg2) && (integer(arg2) > 0) && (abs(value) < 21.4875)) 
+  if (integerp(arg1) && integerp(arg2) && (integer(arg2) > 0) && (abs(value) < 21.4875))
     return number(intpower(integer(arg1), integer(arg2)));
   if (float1 < 0) error(PSTR("'expt' invalid result"));
   return makefloat(exp(value));
@@ -2366,10 +2546,10 @@ object *fn_stringgreater (object *args, object *env) {
 
 object *fn_sort (object *args, object *env) {
   if (first(args) == NULL) return nil;
-  object *list = cons(nil,first(args));
-  push(list,GCStack);
+  object *list = cons(nil, first(args));
+  push(list, GCStack);
   object *predicate = second(args);
-  object *compare = cons(NULL,cons(NULL,NULL));
+  object *compare = cons(NULL, cons(NULL, NULL));
   object *ptr = cdr(list);
   while (cdr(ptr) != NULL) {
     object *go = list;
@@ -2400,8 +2580,8 @@ object *fn_stringfn (object *args, object *env) {
   if (type == CHARACTER) {
     object *cell = myalloc();
     cell->car = NULL;
-    uint8_t shift = (sizeof(int)-1)*8;
-    cell->integer = fromchar(arg)<<shift;
+    uint8_t shift = (sizeof(int) - 1) * 8;
+    cell->integer = fromchar(arg) << shift;
     obj->cdr = cell;
   } else if (type == SYMBOL) {
     char *s = name(arg);
@@ -2435,9 +2615,9 @@ object *fn_concatenate (object *args, object *env) {
     while (obj != NULL) {
       int quad = obj->integer;
       while (quad != 0) {
-         char ch = quad>>((sizeof(int)-1)*8) & 0xFF;
-         buildstring(ch, &chars, &head);
-         quad = quad<<8;
+        char ch = quad >> ((sizeof(int) - 1) * 8) & 0xFF;
+        buildstring(ch, &chars, &head);
+        quad = quad << 8;
       }
       obj = car(obj);
     }
@@ -2459,7 +2639,7 @@ object *fn_subseq (object *args, object *env) {
   result->type = STRING;
   object *head = NULL;
   int chars = 0;
-  for (int i=start; i<end; i++) {
+  for (int i = start; i < end; i++) {
     char ch = nthchar(arg, i);
     if (ch == 0) error(PSTR("'subseq' index out of range"));
     buildstring(ch, &chars, &head);
@@ -2469,7 +2649,7 @@ object *fn_subseq (object *args, object *env) {
 }
 
 int gstr () {
-  if (LastChar) { 
+  if (LastChar) {
     char temp = LastChar;
     LastChar = 0;
     return temp;
@@ -2478,7 +2658,7 @@ int gstr () {
   return (c != 0) ? c : '\n'; // -1?
 }
 
-object *fn_readfromstring (object *args, object *env) {   
+object *fn_readfromstring (object *args, object *env) {
   (void) env;
   object *arg = first(args);
   if (!stringp(arg)) error(PSTR("'read-from-string' argument is not a string"));
@@ -2490,8 +2670,8 @@ object *fn_readfromstring (object *args, object *env) {
 void pstr (char c) {
   buildstring(c, &GlobalStringIndex, &GlobalString);
 }
- 
-object *fn_princtostring (object *args, object *env) {   
+
+object *fn_princtostring (object *args, object *env) {
   (void) env;
   object *arg = first(args);
   object *obj = myalloc();
@@ -2506,7 +2686,7 @@ object *fn_princtostring (object *args, object *env) {
   return obj;
 }
 
-object *fn_prin1tostring (object *args, object *env) {   
+object *fn_prin1tostring (object *args, object *env) {
   (void) env;
   object *arg = first(args);
   object *obj = myalloc();
@@ -2582,7 +2762,7 @@ object *fn_eval (object *args, object *env) {
 object *fn_globals (object *args, object *env) {
   (void) args;
   if (GlobalEnv == NULL) return nil;
-  return fn_mapcar(cons(symbol(CAR),cons(GlobalEnv,nil)), env);
+  return fn_mapcar(cons(symbol(CAR), cons(GlobalEnv, nil)), env);
 }
 
 object *fn_locals (object *args, object *env) {
@@ -2704,7 +2884,7 @@ object *fn_restarti2c (object *args, object *env) {
     read = (rw != NULL);
   }
   int address = stream & 0xFF;
-  if (stream>>8 != I2CSTREAM) error(PSTR("'restart' not i2c"));
+  if (stream >> 8 != I2CSTREAM) error(PSTR("'restart' not i2c"));
   return I2Crestart(address, read) ? tee : nil;
 }
 
@@ -2751,9 +2931,9 @@ object *fn_pinmode (object *args, object *env) {
   object *mode = second(args);
   if ((integerp(mode) && mode->integer == 1) || mode != nil) pinMode(pin, OUTPUT);
   else if (integerp(mode) && mode->integer == 2) pinMode(pin, INPUT_PULLUP);
-  #if defined(INPUT_PULLDOWN)
+#if defined(INPUT_PULLDOWN)
   else if (integerp(mode) && mode->integer == 4) pinMode(pin, INPUT_PULLDOWN);
-  #endif
+#endif
   else pinMode(pin, INPUT);
   return nil;
 }
@@ -2779,7 +2959,7 @@ object *fn_analogread (object *args, object *env) {
   checkanalogread(pin);
   return number(analogRead(pin));
 }
- 
+
 object *fn_analogwrite (object *args, object *env) {
   (void) env;
   int pin = integer(first(args));
@@ -2840,7 +3020,11 @@ object *edit (object *fun) {
     if (c == 'q') setflag(EXITEDITOR);
     else if (c == 'b') return fun;
     else if (c == 'r') fun = read(gserial);
-    else if (c == '\n') { pfl(pserial); superprint(fun, 0, pserial); pln(pserial); }
+    else if (c == '\n') {
+      pfl(pserial);
+      superprint(fun, 0, pserial);
+      pln(pserial);
+    }
     else if (c == 'c') fun = cons(read(gserial), fun);
     else if (atom(fun)) pserial('!');
     else if (c == 'd') fun = cons(car(fun), edit(cdr(fun)));
@@ -2860,7 +3044,7 @@ void pcount (char c) {
   if (c == '\n') GlobalStringIndex++;
   GlobalStringIndex++;
 }
-  
+
 int atomwidth (object *obj) {
   GlobalStringIndex = 0;
   printobject(obj, pcount);
@@ -2891,14 +3075,17 @@ void superprint (object *form, int lm, pfun_t pfun) {
     if (symbolp(form) && form->name == NOTHING) pstring(name(form), pfun);
     else printobject(form, pfun);
   }
-  else if (quoted(form)) { pfun('\''); superprint(car(cdr(form)), lm + 1, pfun); }
+  else if (quoted(form)) {
+    pfun('\'');
+    superprint(car(cdr(form)), lm + 1, pfun);
+  }
   else if (subwidth(form, PPWIDTH - lm) >= 0) supersub(form, lm + PPINDENT, 0, pfun);
   else supersub(form, lm + PPINDENT, 1, pfun);
 }
 
 const int ppspecials = 14;
-const char ppspecial[ppspecials] PROGMEM = 
-  { DOTIMES, DOLIST, IF, SETQ, TEE, LET, LETSTAR, LAMBDA, WHEN, UNLESS, WITHI2C, WITHSERIAL, WITHSPI, WITHSDCARD };
+const char ppspecial[ppspecials] PROGMEM =
+{ DOTIMES, DOLIST, IF, SETQ, TEE, LET, LETSTAR, LAMBDA, WHEN, UNLESS, WITHI2C, WITHSERIAL, WITHSPI, WITHSDCARD };
 
 void supersub (object *form, int lm, int super, pfun_t pfun) {
   int special = 0, separate = 1;
@@ -2906,18 +3093,35 @@ void supersub (object *form, int lm, int super, pfun_t pfun) {
   if (symbolp(arg)) {
     int name = arg->name;
     if (name == DEFUN) special = 2;
-    else for (int i=0; i<ppspecials; i++) {
-      if (name == ppspecial[i]) { special = 1; break; }   
-    } 
+    else for (int i = 0; i < ppspecials; i++) {
+        if (name == ppspecial[i]) {
+          special = 1;
+          break;
+        }
+      }
   }
   while (form != NULL) {
-    if (atom(form)) { pfstring(PSTR(" . "), pfun); printobject(form, pfun); pfun(')'); return; }
-    else if (separate) { pfun('('); separate = 0; }
-    else if (special) { pfun(' '); special--; }
+    if (atom(form)) {
+      pfstring(PSTR(" . "), pfun);
+      printobject(form, pfun);
+      pfun(')');
+      return;
+    }
+    else if (separate) {
+      pfun('(');
+      separate = 0;
+    }
+    else if (special) {
+      pfun(' ');
+      special--;
+    }
     else if (!super) pfun(' ');
-    else { pln(pfun); indent(lm, pfun); }
+    else {
+      pln(pfun);
+      indent(lm, pfun);
+    }
     superprint(car(form), lm, pfun);
-    form = cdr(form);   
+    form = cdr(form);
   }
   pfun(')'); return;
 }
@@ -2952,7 +3156,7 @@ object *fn_pprintall (object *args, object *env) {
 
 object *fn_available (object *args, object *env) {
   (void) env;
-  if (istream(first(args))>>8 != WIFISTREAM) error(PSTR("'available' invalid stream"));
+  if (istream(first(args)) >> 8 != WIFISTREAM) error(PSTR("'available' invalid stream"));
   return number(client.available());
 }
 
@@ -2973,7 +3177,7 @@ object *fn_wifisoftap (object *args, object *env) {
     args = cdr(args);
     int channel = 1;
     boolean hidden = false;
-    if (args != NULL) { 
+    if (args != NULL) {
       channel = integer(first(args));
       args = cdr(args);
       if (args != NULL) hidden = (first(args) != nil);
@@ -2985,7 +3189,7 @@ object *fn_wifisoftap (object *args, object *env) {
 
 object *fn_connected (object *args, object *env) {
   (void) env;
-  if (istream(first(args))>>8 != WIFISTREAM) error(PSTR("'connected' invalid stream"));
+  if (istream(first(args)) >> 8 != WIFISTREAM) error(PSTR("'connected' invalid stream"));
   return client.connected() ? tee : nil;
 }
 
@@ -2997,7 +3201,10 @@ object *fn_wifilocalip (object *args, object *env) {
 object *fn_wificonnect (object *args, object *env) {
   (void) env;
   char ssid[33], pass[65];
-  if (args == NULL) { WiFi.disconnect(true); return nil; }
+  if (args == NULL) {
+    WiFi.disconnect(true);
+    return nil;
+  }
   if (cdr(args) == NULL) WiFi.begin(cstring(first(args), ssid, 33));
   else WiFi.begin(cstring(first(args), ssid, 33), cstring(second(args), pass, 65));
   int result = WiFi.waitForConnectResult();
@@ -3009,6 +3216,12 @@ object *fn_wificonnect (object *args, object *env) {
 }
 
 // Insert your own function definitions here
+// BEG (Kaef reset_reason)
+object *fn_resetreason (object *args, object *env) {
+  (void) args, (void) env;
+  return number(rtc_get_reset_reason(0));
+}
+// END (Kaef reset_reason)
 
 // Built-in procedure names - stored in PROGMEM
 
@@ -3193,6 +3406,7 @@ const char string177[] PROGMEM = "wifi-softap";
 const char string178[] PROGMEM = "connected";
 const char string179[] PROGMEM = "wifi-localip";
 const char string180[] PROGMEM = "wifi-connect";
+const char string181[] PROGMEM = "reset-reason"; // (Kaef reset_reason)
 
 const tbl_entry_t lookup_table[] PROGMEM = {
   { string0, NULL, NIL, NIL },
@@ -3376,6 +3590,7 @@ const tbl_entry_t lookup_table[] PROGMEM = {
   { string178, fn_connected, 1, 1 },
   { string179, fn_wifilocalip, 0, 0 },
   { string180, fn_wificonnect, 0, 2 },
+  { string181, fn_resetreason, 0, 0 }, // (Kaef reset_reason)
 };
 
 // Table lookup functions
@@ -3393,7 +3608,10 @@ int builtin (char* n) {
 int longsymbol (char *buffer) {
   char *p = SymbolTable;
   int i = 0;
-  while (strcmp(p, buffer) != 0) {p = p + strlen(p) + 1; i++; }
+  while (strcmp(p, buffer) != 0) {
+    p = p + strlen(p) + 1;
+    i++;
+  }
   if (p == buffer) {
     // Add to symbol table?
     char *newtop = SymbolTop + strlen(p) + 1;
@@ -3425,7 +3643,10 @@ char *lookupbuiltin (symbol_t name) {
 char *lookupsymbol (symbol_t name) {
   char *p = SymbolTable;
   int i = name - 64000;
-  while (i > 0 && p < SymbolTop) {p = p + strlen(p) + 1; i--; }
+  while (i > 0 && p < SymbolTop) {
+    p = p + strlen(p) + 1;
+    i--;
+  }
   if (p == SymbolTop) return NULL; else return p;
 }
 
@@ -3447,18 +3668,21 @@ void testescape () {
 uint8_t End;
 
 object *eval (object *form, object *env) {
-  int TC=0;
-  EVAL:
+  int TC = 0;
+EVAL:
   yield(); // Needed to avoid Soft WDT Reset
   // Enough space?
   if (End != 0xA5) error(PSTR("Stack overflow"));
   if (Freespace < 20) gc(form, env);
   // Escape
-  if (tstflag(ESCAPE)) { clrflag(ESCAPE); error(PSTR("Escape!"));}
-  #if defined (serialmonitor)
+  if (tstflag(ESCAPE)) {
+    clrflag(ESCAPE);
+    error(PSTR("Escape!"));
+  }
+#if defined (serialmonitor)
   testescape();
-  #endif 
-  
+#endif
+
   if (form == NULL) return nil;
 
   if (integerp(form) || floatp(form) || characterp(form) || stringp(form)) return form;
@@ -3473,7 +3697,7 @@ object *eval (object *form, object *env) {
     else if (name <= ENDFUNCTIONS) return form;
     error2(form, PSTR("undefined"));
   }
-  
+
   // It's a list
   object *function = car(form);
   object *args = cdr(form);
@@ -3491,16 +3715,16 @@ object *eval (object *form, object *env) {
       push(newenv, GCStack);
       while (assigns != NULL) {
         object *assign = car(assigns);
-        if (!consp(assign)) push(cons(assign,nil), newenv);
-        else if (cdr(assign) == NULL) push(cons(first(assign),nil), newenv);
-        else push(cons(first(assign),eval(second(assign),env)), newenv);
+        if (!consp(assign)) push(cons(assign, nil), newenv);
+        else if (cdr(assign) == NULL) push(cons(first(assign), nil), newenv);
+        else push(cons(first(assign), eval(second(assign), env)), newenv);
         car(GCStack) = newenv;
         if (name == LETSTAR) env = newenv;
         assigns = cdr(assigns);
       }
       env = newenv;
       pop(GCStack);
-      form = tf_progn(forms,env);
+      form = tf_progn(forms, env);
       TC = TCstart;
       goto EVAL;
     }
@@ -3517,9 +3741,9 @@ object *eval (object *form, object *env) {
         }
         env = cdr(env);
       }
-      return cons(symbol(CLOSURE), cons(envcopy,args));
+      return cons(symbol(CLOSURE), cons(envcopy, args));
     }
-    
+
     if ((name > SPECIAL_FORMS) && (name < TAIL_FORMS)) {
       return ((fn_ptr_type)lookupfn(name))(args, env);
     }
@@ -3530,7 +3754,7 @@ object *eval (object *form, object *env) {
       goto EVAL;
     }
   }
-        
+
   // Evaluate the parameters - result in head
   object *fname = car(form);
   int TCstart = TC;
@@ -3540,35 +3764,35 @@ object *eval (object *form, object *env) {
   form = cdr(form);
   int nargs = 0;
 
-  while (form != NULL){
-    object *obj = cons(eval(car(form),env),NULL);
+  while (form != NULL) {
+    object *obj = cons(eval(car(form), env), NULL);
     cdr(tail) = obj;
     tail = obj;
     form = cdr(form);
     nargs++;
   }
-    
+
   function = car(head);
   args = cdr(head);
- 
+
   if (symbolp(function)) {
     symbol_t name = function->name;
     if (name >= ENDFUNCTIONS) error2(fname, PSTR("is not valid here"));
-    if (nargs<lookupmin(name)) error2(fname, PSTR("has too few arguments"));
-    if (nargs>lookupmax(name)) error2(fname, PSTR("has too many arguments"));
+    if (nargs < lookupmin(name)) error2(fname, PSTR("has too few arguments"));
+    if (nargs > lookupmax(name)) error2(fname, PSTR("has too many arguments"));
     object *result = ((fn_ptr_type)lookupfn(name))(args, env);
     pop(GCStack);
     return result;
   }
-      
+
   if (listp(function) && issymbol(car(function), LAMBDA)) {
     form = closure(TCstart, fname, NULL, cdr(function), args, &env);
     pop(GCStack);
     int trace = tracing(fname->name);
     if (trace) {
       object *result = eval(form, env);
-      indent((--(TraceDepth[trace-1]))<<1, pserial);
-      pint(TraceDepth[trace-1], pserial);
+      indent((--(TraceDepth[trace - 1])) << 1, pserial);
+      pint(TraceDepth[trace - 1], pserial);
       pserial(':'); pserial(' ');
       printobject(fname, pserial); pfstring(PSTR(" returned "), pserial);
       printobject(result, pserial); pln(pserial);
@@ -3585,15 +3809,15 @@ object *eval (object *form, object *env) {
     pop(GCStack);
     TC = 1;
     goto EVAL;
-  } 
-  
+  }
+
   error2(fname, PSTR("is an illegal function")); return nil;
 }
 
 // Print functions
 
 inline int maxbuffer (char *buffer) {
-  return SYMBOLTABLESIZE-(buffer-SymbolTable)-1;
+  return SYMBOLTABLESIZE - (buffer - SymbolTable) - 1;
 }
 
 void pserial (char c) {
@@ -3603,7 +3827,7 @@ void pserial (char c) {
 }
 
 const char ControlCodes[] PROGMEM = "Null\0SOH\0STX\0ETX\0EOT\0ENQ\0ACK\0Bell\0Backspace\0Tab\0Newline\0VT\0"
-"Page\0Return\0SO\0SI\0DLE\0DC1\0DC2\0DC3\0DC4\0NAK\0SYN\0ETB\0CAN\0EM\0SUB\0Escape\0FS\0GS\0RS\0US\0Space\0";
+                                    "Page\0Return\0SO\0SI\0DLE\0DC1\0DC2\0DC3\0DC4\0NAK\0SYN\0ETB\0CAN\0EM\0SUB\0Escape\0FS\0GS\0RS\0US\0Space\0";
 
 void pcharacter (char c, pfun_t pfun) {
   if (!PrintReadably) pfun(c);
@@ -3612,7 +3836,10 @@ void pcharacter (char c, pfun_t pfun) {
     if (c > 32) pfun(c);
     else {
       const char *p = ControlCodes;
-      while (c > 0) {p = p + strlen(p) + 1; c--; }
+      while (c > 0) {
+        p = p + strlen(p) + 1;
+        c--;
+      }
       pfstring(p, pfun);
     }
   }
@@ -3627,8 +3854,8 @@ void printstring (object *form, pfun_t pfun) {
   form = cdr(form);
   while (form != NULL) {
     int chars = form->integer;
-    for (int i=(sizeof(int)-1)*8; i>=0; i=i-8) {
-      char ch = chars>>i & 0xFF;
+    for (int i = (sizeof(int) - 1) * 8; i >= 0; i = i - 8) {
+      char ch = chars >> i & 0xFF;
       if (PrintReadably && (ch == '"' || ch == '\\')) pfun('\\');
       if (ch) pfun(ch);
     }
@@ -3648,16 +3875,19 @@ void pfstring (const char *s, pfun_t pfun) {
 
 void pint (int i, pfun_t pfun) {
   int lead = 0;
-  #if INT_MAX == 32767
+#if INT_MAX == 32767
   int p = 10000;
-  #else
+#else
   int p = 1000000000;
-  #endif
-  if (i<0) pfun('-');
-  for (int d=p; d>0; d=d/10) {
-    int j = i/d;
-    if (j!=0 || lead || d==1) { pfun(abs(j)+'0'); lead=1;}
-    i = i - j*d;
+#endif
+  if (i < 0) pfun('-');
+  for (int d = p; d > 0; d = d / 10) {
+    int j = i / d;
+    if (j != 0 || lead || d == 1) {
+      pfun(abs(j) + '0');
+      lead = 1;
+    }
+    i = i - j * d;
   }
 }
 
@@ -3666,36 +3896,59 @@ void pmantissa (float f, pfun_t pfun) {
   int mul = pow(10, 5 - sig);
   int i = round(f * mul);
   boolean point = false;
-  if (i == 1000000) { i = 100000; sig++; }
+  if (i == 1000000) {
+    i = 100000;
+    sig++;
+  }
   if (sig < 0) {
     pfun('0'); pfun('.'); point = true;
-    for (int j=0; j < - sig - 1; j++) pfun('0');
+    for (int j = 0; j < - sig - 1; j++) pfun('0');
   }
   mul = 100000;
-  for (int j=0; j<7; j++) {
+  for (int j = 0; j < 7; j++) {
     int d = (int)(i / mul);
     pfun(d + '0');
     i = i - d * mul;
-    if (i == 0) { if (!point) { pfun('.'); pfun('0'); } return; }
-    if (j == sig && sig >= 0) { pfun('.'); point = true; }
+    if (i == 0) {
+      if (!point) {
+        pfun('.');
+        pfun('0');
+      } return;
+    }
+    if (j == sig && sig >= 0) {
+      pfun('.');
+      point = true;
+    }
     mul = mul / 10;
   }
 }
 
 void pfloat (float f, pfun_t pfun) {
-  if (isnan(f)) { pfstring(PSTR("NaN"), pfun); return; }
-  if (f == 0.0) { pfun('0'); return; }
-  if (isinf(f)) { pfstring(PSTR("Inf"), pfun); return; }
-  if (f < 0) { pfun('-'); f = -f; }
+  if (isnan(f)) {
+    pfstring(PSTR("NaN"), pfun);
+    return;
+  }
+  if (f == 0.0) {
+    pfun('0');
+    return;
+  }
+  if (isinf(f)) {
+    pfstring(PSTR("Inf"), pfun);
+    return;
+  }
+  if (f < 0) {
+    pfun('-');
+    f = -f;
+  }
   // Calculate exponent
   int e = 0;
   if (f < 1e-3 || f >= 1e5) {
     e = floor(log(f) / 2.302585); // log10 gives wrong result
     f = f / pow(10, e);
   }
-  
+
   pmantissa (f, pfun);
-  
+
   // Exponent
   if (e != 0) {
     pfun('e');
@@ -3711,7 +3964,7 @@ void pfl (pfun_t pfun) {
   if (LastPrint != '\n') pfun('\n');
 }
 
-void printobject (object *form, pfun_t pfun){
+void printobject (object *form, pfun_t pfun) {
   if (form == NULL) pfstring(PSTR("nil"), pfun);
   else if (listp(form) && issymbol(car(form), CLOSURE)) pfstring(PSTR("<closure>"), pfun);
   else if (listp(form)) {
@@ -3730,7 +3983,7 @@ void printobject (object *form, pfun_t pfun){
     pfun(')');
   } else if (integerp(form)) {
     pint(integer(form), pfun);
-    } else if (floatp(form)) {
+  } else if (floatp(form)) {
     pfloat(fromfloat(form), pfun);
   } else if (symbolp(form)) {
     if (form->name != NOTHING) pstring(name(form), pfun);
@@ -3740,9 +3993,9 @@ void printobject (object *form, pfun_t pfun){
     printstring(form, pfun);
   } else if (streamp(form)) {
     pfstring(PSTR("<"), pfun);
-    if ((form->integer)>>8 == SPISTREAM) pfstring(PSTR("spi"), pfun);
-    else if ((form->integer)>>8 == I2CSTREAM) pfstring(PSTR("i2c"), pfun);
-    else if ((form->integer)>>8 == SDSTREAM) pfstring(PSTR("sd"), pfun);
+    if ((form->integer) >> 8 == SPISTREAM) pfstring(PSTR("spi"), pfun);
+    else if ((form->integer) >> 8 == I2CSTREAM) pfstring(PSTR("i2c"), pfun);
+    else if ((form->integer) >> 8 == SDSTREAM) pfstring(PSTR("sd"), pfun);
     else pfstring(PSTR("serial"), pfun);
     pfstring(PSTR("-stream "), pfun);
     pint(form->integer & 0xFF, pfun);
@@ -3755,7 +4008,7 @@ void printobject (object *form, pfun_t pfun){
 
 #if defined(lisplibrary)
 int glibrary () {
-  if (LastChar) { 
+  if (LastChar) {
     char temp = LastChar;
     LastChar = 0;
     return temp;
@@ -3764,7 +4017,7 @@ int glibrary () {
   return (c != 0) ? c : -1; // -1?
 }
 
-void loadfromlibrary (object *env) {   
+void loadfromlibrary (object *env) {
   GlobalStringIndex = 0;
   object *line = read(glibrary);
   while (line != NULL) {
@@ -3775,7 +4028,7 @@ void loadfromlibrary (object *env) {
 #endif
 
 int gserial () {
-  if (LastChar) { 
+  if (LastChar) {
     char temp = LastChar;
     LastChar = 0;
     return temp;
@@ -3788,10 +4041,10 @@ int gserial () {
 
 object *nextitem (gfun_t gfun) {
   int ch = gfun();
-  while(isspace(ch)) ch = gfun();
+  while (isspace(ch)) ch = gfun();
 
   if (ch == ';') {
-    while(ch != '(') ch = gfun();
+    while (ch != '(') ch = gfun();
     ch = '(';
   }
   if (ch == '\n') ch = gfun();
@@ -3802,7 +4055,7 @@ object *nextitem (gfun_t gfun) {
 
   // Parse string
   if (ch == '"') return readstring('"', gfun);
-  
+
   // Parse symbol, character, or number
   int index = 0, base = 10, sign = 1;
   char *buffer = SymbolTop;
@@ -3834,19 +4087,22 @@ object *nextitem (gfun_t gfun) {
     ch = gfun();
   }
   int valid; // 0=undecided, -1=invalid, +1=valid
-  if (ch == '.') valid = 0; else if (digitvalue(ch)<base) valid = 1; else valid = -1;
+  if (ch == '.') valid = 0; else if (digitvalue(ch) < base) valid = 1; else valid = -1;
   boolean isexponent = false;
   int exponent = 0, esign = 1;
   buffer[2] = '\0'; // In case symbol is one letter
   float divisor = 10.0;
-  
-  while(!isspace(ch) && ch != ')' && ch != '(' && index < bufmax) {
+
+  while (!isspace(ch) && ch != ')' && ch != '(' && index < bufmax) {
     buffer[index++] = ch;
     if (base == 10 && ch == '.' && !isexponent) {
       isfloat = true;
       fresult = result;
     } else if (base == 10 && (ch == 'e' || ch == 'E')) {
-      if (!isfloat) { isfloat = true; fresult = result; }
+      if (!isfloat) {
+        isfloat = true;
+        fresult = result;
+      }
       isexponent = true;
       if (valid == 1) valid = 0; else valid = -1;
     } else if (isexponent && ch == '-') {
@@ -3854,7 +4110,7 @@ object *nextitem (gfun_t gfun) {
     } else if (isexponent && ch == '+') {
     } else {
       int digit = digitvalue(ch);
-      if (digitvalue(ch)<base && valid != -1) valid = 1; else valid = -1;
+      if (digitvalue(ch) < base && valid != -1) valid = 1; else valid = -1;
       if (isexponent) {
         exponent = exponent * 10 + digit;
       } else if (isfloat) {
@@ -3871,9 +4127,9 @@ object *nextitem (gfun_t gfun) {
   if (ch == ')' || ch == '(') LastChar = ch;
   if (isfloat && valid == 1) return makefloat(fresult * sign * pow(10, exponent * esign));
   else if (valid == 1) {
-    if (base == 10 && result > ((unsigned int)INT_MAX+(1-sign)/2)) 
-      return makefloat((float)result*sign);
-    return number(result*sign);
+    if (base == 10 && result > ((unsigned int)INT_MAX + (1 - sign) / 2))
+      return makefloat((float)result * sign);
+    return number(result * sign);
   } else if (base == 0) {
     if (index == 1) return character(buffer[0]);
     const char* p = ControlCodes; char c = 0;
@@ -3883,7 +4139,7 @@ object *nextitem (gfun_t gfun) {
     }
     error(PSTR("Unknown character"));
   }
-  
+
   int x = builtin(buffer);
   if (x == NIL) return nil;
   if (x < ENDFUNCTIONS) return newsymbol(x);
@@ -3921,9 +4177,90 @@ object *read (gfun_t gfun) {
   if (item == (object *)KET) error(PSTR("Incomplete list"));
   if (item == (object *)BRA) return readrest(gfun);
   if (item == (object *)DOT) return read(gfun);
-  if (item == (object *)QUO) return cons(symbol(QUOTE), cons(read(gfun), NULL)); 
+  if (item == (object *)QUO) return cons(symbol(QUOTE), cons(read(gfun), NULL));
   return item;
 }
+
+#if (defined SD_CARD_DEBUG) && (defined ESP32) /* Kaef */
+void listDir(const char * dirname, uint8_t levels) {
+  Serial.printf("Listing directory: %s\n", dirname);
+
+  File root = SD.open(dirname);
+  if (!root) {
+    Serial.println("Failed to open directory");
+    return;
+  }
+  if (!root.isDirectory()) {
+    Serial.println("Not a directory");
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file) {
+    if (file.isDirectory()) {
+      Serial.print("  DIR : ");
+      Serial.println(file.name());
+      if (levels) {
+        listDir(file.name(), levels - 1);
+      }
+    } else {
+      Serial.print("  FILE: ");
+      Serial.print(file.name());
+      Serial.print("  SIZE: ");
+      Serial.println(file.size());
+    }
+    file = root.openNextFile();
+  }
+  Serial.println("done");
+}
+
+void sd_test () {
+  //SPI.begin(18, 19, 23, SDCARD_SS_PIN); // sck, miso, mosi, ss
+  //SPI.begin(14, 2, 15, SDCARD_SS_PIN); // sck, miso, mosi, ss
+
+  Serial.print("SDCARD_SS_PIN = "); Serial.println(SDCARD_SS_PIN);
+
+  if (!SD.begin(SDCARD_SS_PIN)) {
+    Serial.println("Card Mount Failed!");
+    return;
+  }
+  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+  Serial.printf("SD Card Size: %lluMB\n", cardSize);
+
+  listDir("/", 5);
+}
+#endif
+
+// Kaef:
+void printEnabledFeatures () {
+  pln(pserial); pfstring(PSTR("  Features:"), pserial);
+#if (defined resetautorun)
+  pfstring(PSTR(" resetautorun"), pserial);
+#endif
+#if (defined printfreespace)
+  pfstring(PSTR(" printfreespace"), pserial);
+#endif
+#if (defined serialmonitor)
+  pfstring(PSTR(" serialmonitor"), pserial);
+#endif
+#if (defined printgcs)
+  pfstring(PSTR(" printgcs"), pserial);
+#endif
+#if (defined sdcardsupport)
+  pfstring(PSTR(" sdcardsupport"), pserial);
+#endif
+#if (defined SD_CARD_DEBUG)
+  pfstring(PSTR(" SD_CARD_DEBUG"), pserial);
+#endif
+#if (defined lisplibrary)
+  pfstring(PSTR(" lisplibrary"), pserial);
+#endif
+#if defined LARGE_WORKSPACE
+  pfstring(PSTR(" LARGE_WORKSPACE"), pserial);
+#endif
+  pln(pserial); pln(pserial);
+}
+
 
 // Setup
 
@@ -3933,13 +4270,25 @@ void initenv () {
 }
 
 void setup () {
-  Serial.begin(9600);
+  Serial.begin(115200); // Kaef
   int start = millis();
-  while (millis() - start < 5000) { if (Serial) break; }
+  while (millis() - start < 5000) {
+    if (Serial) break;
+  }
   initworkspace();
   initenv();
   initsleep();
-  pfstring(PSTR("uLisp 2.4 "), pserial); pln(pserial);
+  pfstring(PSTR("uLisp 2.4a (forked)"), pserial); pln(pserial);
+  pfstring(PSTR("  reset reason: "), pserial); pint(rtc_get_reset_reason(0), pserial); pln(pserial); // Kaef deepsleep
+  pfstring(PSTR("  compiled: "), pserial);
+  pfstring(PSTR(__DATE__), pserial); pfstring(PSTR(" "), pserial);
+  pfstring(PSTR(__TIME__), pserial);
+  printEnabledFeatures();
+
+  // Kaef: SD Card test
+#if (defined SD_CARD_DEBUG) && (defined ESP32)
+  sd_test();
+#endif
 }
 
 // Read/Evaluate/Print loop
@@ -3947,17 +4296,22 @@ void setup () {
 void repl (object *env) {
   for (;;) {
     randomSeed(micros());
-    gc(NULL, env);
-    #if defined (printfreespace)
+#if !(defined LARGE_WORKSPACE) /* Kaef: large workspace patch */
+    gc(NULL, env); // Kaef: speed patch for large workspaces
+#endif
+#if defined (printfreespace)
     pint(Freespace, pserial);
-    #endif
+#endif
     if (BreakLevel) {
       pfstring(PSTR(" : "), pserial);
       pint(BreakLevel, pserial);
     }
     pfstring(PSTR("> "), pserial);
     object *line = read(gserial);
-    if (BreakLevel && line == nil) { pln(pserial); return; }
+    if (BreakLevel && line == nil) {
+      pln(pserial);
+      return;
+    }
     if (line == (object *)KET) error(PSTR("Unmatched right bracket"));
     push(line, GCStack);
     pfl(pserial);
@@ -3973,21 +4327,21 @@ void repl (object *env) {
 void loop () {
   End = 0xA5;      // Canary to check stack
   if (!setjmp(exception)) {
-    #if defined(resetautorun)
+#if defined(resetautorun)
     volatile int autorun = 12; // Fudge to keep code size the same
-    #else
+#else
     volatile int autorun = 13;
-    #endif
+#endif
     if (autorun == 12) autorunimage();
   }
   // Come here after error
-  for (int i=0; i<TRACEMAX; i++) TraceDepth[i] = 0;
-  #if defined(sdcardsupport)
+  for (int i = 0; i < TRACEMAX; i++) TraceDepth[i] = 0;
+#if defined(sdcardsupport)
   SDpfile.close(); SDgfile.close();
-  #endif
-  #if defined(lisplibrary)
+#endif
+#if defined(lisplibrary)
   loadfromlibrary(NULL);
-  #endif
+#endif
   client.stop();
   repl(NULL);
 }
