@@ -4,6 +4,14 @@
     Licensed under the MIT license: https://opensource.org/licenses/MIT
 */
 /*
+  KNOWN ISSUES
+    2018-10-19: 
+      (01) sometimes (save-image)(load-image) corrupts the workspace, image is not loaded (or saved?) correctly
+           FIX: unknown (need to do more tests to find out how to produce the error)
+      (02) sometimes (save-image) is discarded because image is too big (but it isn't!)
+           FIX: unknown (see (01), I think these belong together)
+
+                  
   CHANGELOG
     Version Date       Author Description                                            Marked in code with:
     ------------------------------------------------------------------------------------------------------
@@ -13,6 +21,9 @@
                                 esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
                                 esp_deep_sleep_start();
             -----------------------------------------------------------------------------------------------
+            2018-10-19 Kaef   print uLisp start message at begin of setup()
+                              added message to show uLisp's enabled features
+                              added initworkspace debug messages
             2018-10-16 Kaef   added sleep                                            Kaef deepsleep
                               TODO: make sleep as before, add deepsleep function
             2018-10-16 Kaef   added reset-reason                                     Kaef reset_reason
@@ -32,10 +43,10 @@
 */
 // Compile options
 
-#define resetautorun
+//#define resetautorun
 #define printfreespace
 #define serialmonitor
-#define printgcs
+//#define printgcs
 #define sdcardsupport
 #define lisplibrary
 
@@ -179,10 +190,10 @@ typedef int BitOrder;
 
 #elif defined(ESP32)
 #define LARGE_WORKSPACE        /* Kaef: large workspace patches */
-const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024 - 64) / 8; /* Kaef PSRAM */
-unsigned int WORKSPACESIZE = (8000 - SDSIZE);     /* Cells (8*bytes) */ /* Kaef PSRAM */
+const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024) / 8; /* Kaef PSRAM */
+unsigned int WORKSPACESIZE = (4096 - SDSIZE);     /* Cells (8*bytes) */ /* Kaef PSRAM */
 //#define WORKSPACESIZE 8000-SDSIZE       /* Cells (8*bytes) */
-#define EEPROMSIZE 8192                 /* Bytes available for EEPROM */
+#define EEPROMSIZE 4096                 /* Bytes available for EEPROM */
 #define SYMBOLTABLESIZE 512             /* Bytes */
 #define analogWrite(x,y) dacWrite((x),(y))
 #ifdef sdcardsupport
@@ -247,13 +258,24 @@ int builtin (char* n);
 void initworkspace () {
   /* Kaef PSRAM START*/
 #if defined ESP32
-  // use psramFound() instead of the define BOARD_HAS_PSRAM
-  pfstring(PSTR("psramFound returns: "), pserial); pint(psramFound(), pserial); pln(pserial);
+  pfstring(PSTR("  initworkspace "), pserial);
   if (psramFound()) {
+    pfstring(PSTR("PSRAM "), pserial);
     WORKSPACESIZE = PSRAMWORKSPACESIZE;
-    Workspace = (object*)ps_calloc(PSRAMWORKSPACESIZE, sizeof(object));
+    // Kaef: a few bytes (~ 51) of PSRAM is used by espressif
+    //       because I didn't found a description for this, so I iterativly try to allocate memory
+    Workspace = NULL;
+    while((Workspace == NULL) && (WORKSPACESIZE > 0)) {
+      WORKSPACESIZE--;
+      Workspace = (object*)ps_calloc(WORKSPACESIZE, sizeof(object)); 
+    }
+    pint(WORKSPACESIZE, pserial); pfstring(PSTR("("), pserial);
+    pint(PSRAMWORKSPACESIZE / 1024, pserial); pfstring(PSTR("k - "), pserial);
+    pint(PSRAMWORKSPACESIZE - WORKSPACESIZE, pserial);
+    pfstring(PSTR(") cons allocated. "), pserial); 
   } else {
     Workspace = (object*)calloc(WORKSPACESIZE, sizeof(object));
+    pfstring(PSTR("done"), pserial); 
   }
   if (Workspace == 0) {
     error(PSTR("Allocating workspace failed, entering endless loop..."));
@@ -261,6 +283,7 @@ void initworkspace () {
       delay(1000);
   }
   memset(Workspace, 0, sizeof(*Workspace));
+  pfl(pserial);
 #endif
   /* Kaef PSRAM END */
 
@@ -431,12 +454,13 @@ int compactimage (object **arg) {
 
   // Kaef: BEG Looking for last used con in Workspace
   int idxMaxUsedCon = WORKSPACESIZE;
+  /* */
   for (int i = WORKSPACESIZE - 1; i >= 0; i--) {
     if (Workspace[i].type != NULL) {
       idxMaxUsedCon = i;
       break;
     }
-  }
+  } // */
   // Kaef: END Search for last used cons
   int count = 0; // Kaef: for debugging, see below
   while (firstfree < obj) {
@@ -1208,16 +1232,21 @@ void sleep (int secs) {
   // Kaef: BEG deepsleep
 #ifdef ESP32
 #ifdef sdcardsupport
-  pfstring(PSTR("Close sdcard"), pserial); //Serial.flush();
+  pfstring(PSTR("Close sdcard files..."), pserial); pln(pserial); //Serial.flush();
   SDpfile.close(); SDgfile.close();
 #endif
+  if(secs < 1) secs = 1;
   // Isolate GPIO12 pin from external circuits. This is needed for modules
   // which have an external pull-up resistor on GPIO12 (such as ESP32-WROVER)
   // to minimize current consumption.
   // Other pins should be isolated too.
   rtc_gpio_isolate(GPIO_NUM_0);
+  rtc_gpio_isolate(GPIO_NUM_2);
+  rtc_gpio_isolate(GPIO_NUM_5);
   rtc_gpio_isolate(GPIO_NUM_12);
-
+  rtc_gpio_isolate(GPIO_NUM_15);
+  // one second 'normal' delay to give system some time to flush buffers
+  secs--; delay(1000);
   esp_sleep_enable_timer_wakeup(secs * 1E6);
   esp_deep_sleep_start();
   // Kaef: END deepsleep
@@ -4258,7 +4287,7 @@ void printEnabledFeatures () {
 #if defined LARGE_WORKSPACE
   pfstring(PSTR(" LARGE_WORKSPACE"), pserial);
 #endif
-  pln(pserial); pln(pserial);
+  pln(pserial);
 }
 
 
@@ -4275,9 +4304,6 @@ void setup () {
   while (millis() - start < 5000) {
     if (Serial) break;
   }
-  initworkspace();
-  initenv();
-  initsleep();
   pfstring(PSTR("uLisp 2.4a (forked)"), pserial); pln(pserial);
   pfstring(PSTR("  reset reason: "), pserial); pint(rtc_get_reset_reason(0), pserial); pln(pserial); // Kaef deepsleep
   pfstring(PSTR("  compiled: "), pserial);
@@ -4285,10 +4311,15 @@ void setup () {
   pfstring(PSTR(__TIME__), pserial);
   printEnabledFeatures();
 
+  initworkspace();
+  initenv();
+  initsleep();
+
   // Kaef: SD Card test
 #if (defined SD_CARD_DEBUG) && (defined ESP32)
   sd_test();
 #endif
+  pln(pserial); 
 }
 
 // Read/Evaluate/Print loop
