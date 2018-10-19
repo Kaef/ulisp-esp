@@ -21,6 +21,7 @@
                                 esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
                                 esp_deep_sleep_start();
             -----------------------------------------------------------------------------------------------
+            2018-10-19 Kaef   autorunimage is working, addmissing pinMode() call
             2018-10-19 Kaef   print uLisp start message at begin of setup()
                               added message to show uLisp's enabled features
                               added initworkspace debug messages
@@ -43,7 +44,7 @@
 */
 // Compile options
 
-//#define resetautorun
+#define resetautorun
 #define printfreespace
 #define serialmonitor
 //#define printgcs
@@ -74,7 +75,7 @@ extern "C" {
 #include <limits.h>
 #include <EEPROM.h>
 #if defined (ESP8266)
-#include <ESP8266WiFi.h>~
+#include <ESP8266WiFi.h>
 #elif defined (ESP32)
 #include <WiFi.h>
 #endif
@@ -581,13 +582,16 @@ int loadimage (object *filename) {
 }
 
 void autorunimage () {
+  pinMode(0, INPUT_PULLUP);
   if (digitalRead(0) == HIGH) { // Kaef: patch to not load workspace if button 0 is pressed
     object *nullenv = NULL;
     EEPROM.begin(EEPROMSIZE);
     int addr = 0;
     object *autorun = EpromReadPtr(&addr);
     if (autorun != NULL && (unsigned int)autorun != 0xFFFF) {
+      pfstring(PSTR("loading image..."), pserial);
       loadimage(nil);
+      pfstring(PSTR(" done"), pserial); pfl(pserial);
       apply(autorun, NULL, &nullenv);
     }
   }

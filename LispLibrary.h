@@ -8,6 +8,22 @@
 const char LispLibrary[] PROGMEM =
 /* "(pinmode 25 t)(digitalwrite 25 t)" */
 
+/* some definitions to make live easier... */
+"(defvar *INPUT* 0)"
+"(defvar *OUTPUT* 1)"
+"(defvar *INPUT_PULLUP* 2)"
+
+
+/* some code (mostly) copied from ulisp.com: */
+/* Benchmark tak: */
+"(defun tak (x y z) \
+  (if (not (< y x)) \
+      z \
+    (tak \
+     (tak (1- x) y z) \
+     (tak (1- y) z x) \
+     (tak (1- z) x y))))"
+     
 /* load a program from sd-card, each lisp-function must be written in one line in the file! */
 "(defun loadProgram (filename) \
     (with-sd-card (s filename) \
@@ -37,15 +53,6 @@ const char LispLibrary[] PROGMEM =
   (loadProgram \"/lisp.txt\") \
   (print (sq 123)))"
 
-/* just for testing */
-"(defun blink (pin x) (pinmode pin t) (digitalwrite pin x) (delay 250) (blink pin (not x)))"
-"(defun fastblink (pin x) (pinmode pin t) (digitalwrite pin x) (delay 50) (fastblink pin (not x)))"
-"(defun veryfastblink (pin x) (pinmode pin t) (digitalwrite pin x) (veryfastblink pin (not x)))"
-"(defun b26 () (blink 26 t))"
-"(defun fb26 () (fastblink 26 t))"
-"(defun vfb26 () (veryfastblink 26 t))"
-// */
-
 /* lisp-server */
 "(defvar *SERVER-IP* '(192 168 1 204))"
 "(defvar *SERVER-PORT* 1234)"
@@ -64,6 +71,15 @@ const char LispLibrary[] PROGMEM =
     x))"
 
 "(defun println (x s) (princ x s) (princ #\\return s) (princ #\\newline s))"
+
+/* just for testing */
+"(defun blink (pin x) (pinmode pin t) (digitalwrite pin x) (delay 250) (blink pin (not x)))"
+"(defun fastblink (pin x) (pinmode pin t) (digitalwrite pin x) (delay 50) (fastblink pin (not x)))"
+"(defun veryfastblink (pin x) (pinmode pin t) (digitalwrite pin x) (veryfastblink pin (not x)))"
+"(defun b26 () (blink 26 t))"
+"(defun fb26 () (fastblink 26 t))"
+"(defun vfb26 () (veryfastblink 26 t))"
+// */
 
 /* this can't be stopped: "(blink 25 t)" */
 
