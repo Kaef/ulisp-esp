@@ -4324,7 +4324,7 @@ void setup () {
     pfstring(PSTR(__DATE__), pserial); pfstring(PSTR(" "), pserial);
     pfstring(PSTR(__TIME__), pserial);
     printEnabledFeatures();
-    printFreeHeap();
+    //printFreeHeap();
 
     initworkspace();
     initenv();
