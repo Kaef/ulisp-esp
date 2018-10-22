@@ -22,6 +22,7 @@
                                 esp_sleep_enable_ext0_wakeup(GPIO_NUM_n, x), x: 1=high, 0= low
                                 esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
                                 esp_deep_sleep_start();
+            TODO              read/write images from/to sd-card
             -----------------------------------------------------------------------------------------------
             2018-10-20 Kaef   message to suppress resetautorun-function
             2018-10-19 Kaef   autorunimage is working, addmissing pinMode() call
