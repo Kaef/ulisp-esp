@@ -10,10 +10,12 @@
            FIX: unknown (need to do more tests to find out how to produce the error)
       (02) sometimes (save-image) is discarded because image is too big (but it isn't!)
            FIX: unknown (see (01), I think these belong together)
+      => added error, if EEPROM.commit() fails (Tag: "Kaef EEPROM")
+      => added EEPROM.end(), need to test if this fixes the issues 01 & 02 (Tag: "Kaef EEPROM")
 
 
     CHANGELOG
-    Version Date       Author Description                                            Marked in code with:
+    Version Date       Author Description                                            Tags in code
     ------------------------------------------------------------------------------------------------------
     Version 3.4a:
             TODO              external wakeup:
@@ -193,10 +195,10 @@ typedef int BitOrder;
 #elif defined(ESP32)
 #define LARGE_WORKSPACE        /* Kaef: large workspace patches */
 const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024) / 8; /* Kaef PSRAM */
-unsigned int WORKSPACESIZE = (8192 - SDSIZE);        /* Cells (8*bytes) */ /* Kaef PSRAM */
-//#define WORKSPACESIZE 8000-SDSIZE                  /* Cells (8*bytes) */
-#define SYMBOLTABLESIZE 512                          /* Bytes */
-#define EEPROMSIZE (4096 - SDSIZE + SYMBOLTABLESIZE) /* Bytes available for EEPROM */
+unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PSRAM */
+//#define WORKSPACESIZE 8000-SDSIZE             /* Cells (8*bytes) */
+#define EEPROMSIZE 8192                         /* Bytes available for EEPROM */
+#define SYMBOLTABLESIZE 512                     /* Bytes */
 #define analogWrite(x,y) dacWrite((x),(y))
 #ifdef sdcardsupport
 // the names are a bit misleading: here, the gpio-nums has to be configured, not the pin nums!
@@ -547,7 +549,8 @@ int saveimage (object *arg) {
         EpromWritePtr(&addr, (uintptr_t)car(obj));
         EpromWritePtr(&addr, (uintptr_t)cdr(obj));
     }
-    EEPROM.commit();
+    if (!EEPROM.commit()) error(PSTR("Error writing EEPROM data (save-image)")); // Kaef EEPROM
+    EEPROM.end(); // Kaef EEPROM
     return imagesize;
 }
 
@@ -575,6 +578,7 @@ int loadimage (object *filename) {
     SymbolTop = (char *)EpromReadPtr(&addr);
     for (int i = 0; i < SYMBOLTABLESIZE; i++) SymbolTable[i] = EEPROM.read(addr++);
 #endif
+    // EEPROM.end(); // Kaef EEPROM (TODO: reset of esp32, why?)
     for (int i = 0; i < imagesize; i++) {
         object *obj = &Workspace[i];
         car(obj) = EpromReadPtr(&addr);
@@ -591,6 +595,7 @@ void autorunimage () {
         EEPROM.begin(EEPROMSIZE);
         int addr = 0;
         object *autorun = EpromReadPtr(&addr);
+        EEPROM.end(); // Kaef EEPROM
         if (autorun != NULL && (unsigned int)autorun != 0xFFFF) {
             pfstring(PSTR("loading image..."), pserial);
             loadimage(nil);
