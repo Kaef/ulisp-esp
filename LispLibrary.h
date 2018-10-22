@@ -53,36 +53,6 @@ const char LispLibrary[] PROGMEM =
   (loadProgram \"/lisp.txt\") \
   (print (sq 123)))"
 
-/* lisp-server */
-"(defvar *SERVER-IP* '(192 168 1 204))"
-"(defvar *SERVER-PORT* 1234)"
-"(defun lisp-server () \
-  (with-client (s (ip *SERVER-IP*) *SERVER-PORT*) \
-    (print \"Listening...(start 'nc -l [k] *SERVER-PORT*' on host)\") \
-    (loop \
-     (unless (= 0 (available s)) \
-       (let ((line (read-line s))) \
-         (print line) \
-         (println (eval (read-from-string line)) s))) \
-     (delay 1000))))"
-"(defun ip (lis) \
-  (let ((x 0)) \
-    (mapc (lambda (n) (setq x (+ (ash x 8) n))) (reverse lis)) \
-    x))"
-
-"(defun println (x s) (princ x s) (princ #\\return s) (princ #\\newline s))"
-
-/* just for testing */
-"(defun blink (pin x) (pinmode pin t) (digitalwrite pin x) (delay 250) (blink pin (not x)))"
-"(defun fastblink (pin x) (pinmode pin t) (digitalwrite pin x) (delay 50) (fastblink pin (not x)))"
-"(defun veryfastblink (pin x) (pinmode pin t) (digitalwrite pin x) (veryfastblink pin (not x)))"
-"(defun b26 () (blink 26 t))"
-"(defun fb26 () (fastblink 26 t))"
-"(defun vfb26 () (veryfastblink 26 t))"
-// */
-
-/* this can't be stopped: "(blink 25 t)" */
-
 /*
 "(princ \"globals; \") (princ (globals)) (terpri)"
 "(princ \"reset-reason: \") (princ (reset-reason)) (terpri)"
