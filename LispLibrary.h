@@ -53,6 +53,25 @@ const char LispLibrary[] PROGMEM =
   (loadProgram \"/lisp.txt\") \
   (print (sq 123)))"
 
+/* simple lisp program editor: */
+/* http://forum.ulisp.com/t/simple-lisp-program-editor/54 */
+"(defun e (l) \
+  (loop \
+   (let ((c (read))) \
+     (when (eq c 'b) (return l)) \
+     (setq l \
+           (cond \
+            ((eq c 'r) (read)) \
+            ((eq c '?) (princ l) (terpri) l) \
+            ((eq c 'c) (cons (read) l)) \
+            ((atom l) (princ '*) l) \
+            ((eq c 'd) (cons (car l) (e (cdr l)))) \
+            ((eq c 'a) (cons (e (car l)) (cdr l))) \
+            ((eq c 'x) (cdr l)) \
+            (t (princ '!) (terpri) l))))))"
+
+"(defun ed (l) (setq l (e (eval l))))"
+
 /*
 "(princ \"globals; \") (princ (globals)) (terpri)"
 "(princ \"reset-reason: \") (princ (reset-reason)) (terpri)"

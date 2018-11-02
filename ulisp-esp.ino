@@ -461,7 +461,7 @@ int compactimage (object **arg) {
   object *obj = &Workspace[WORKSPACESIZE - 1];
 
   // Kaef: BEG Looking for last used con in Workspace
-  int idxMaxUsedCon = WORKSPACESIZE;
+  int idxMaxUsedCon = WORKSPACESIZE - 1;
   /* */
   for (int i = WORKSPACESIZE - 1; i >= 0; i--) {
     if (Workspace[i].type != NULL) {
