@@ -3096,8 +3096,10 @@ int atomwidth (object *obj) {
   return GlobalStringIndex;
 }
 
+// 2018-11-03: David found the problem (pprint '(nil)) -- fixed
 boolean quoted (object *obj) {
-  return (consp(obj) && (car(obj)->name == QUOTE) && consp(cdr(obj)) && (cddr(obj) == NULL));
+  return (consp(obj) && (car(obj) != NULL) && (car(obj)->name == QUOTE)
+          && (consp(cdr(obj)) && cddr(obj) == NULL));
 }
 
 int subwidth (object *obj, int w) {
