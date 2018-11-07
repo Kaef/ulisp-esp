@@ -24,6 +24,9 @@
                                 esp_deep_sleep_start();
             TODO              read/write images from/to sd-card
             -----------------------------------------------------------------------------------------------
+            2018-11-07 Kaef   beginning deep-sleep
+                                an integer or float argument leads to timer-deepsleep
+                                TODO: add external wakeup '('(port logic-function) ['(port logic-function)])
             2018-10-20 Kaef   message to suppress resetautorun-function
             2018-10-19 Kaef   autorunimage is working, addmissing pinMode() call
             2018-10-19 Kaef   print uLisp start message at begin of setup()
@@ -131,7 +134,6 @@ enum type { ZERO = 0, SYMBOL = 2, NUMBER = 4, STREAM = 6, CHARACTER = 8, FLOAT =
 enum token { UNUSED, BRA, KET, QUO, DOT };
 enum stream { SERIALSTREAM, I2CSTREAM, SPISTREAM, SDSTREAM, WIFISTREAM };
 
-// (Kaef reset_reason) RESETREASON added after WIFICONNECT
 enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSURE, SPECIAL_FORMS, QUOTE,
                 DEFUN, DEFVAR, SETQ, LOOP, PUSH, POP, INCF, DECF, SETF, DOLIST, DOTIMES, TRACE, UNTRACE, FORMILLIS,
                 WITHSERIAL, WITHI2C, WITHSPI, WITHSDCARD, WITHCLIENT, TAIL_FORMS, PROGN, RETURN, IF, COND, WHEN, UNLESS,
@@ -146,7 +148,7 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 MAKUNBOUND, BREAK, READ, PRIN1, PRINT, PRINC, TERPRI, READBYTE, READLINE, WRITEBYTE, WRITESTRING,
                 WRITELINE, RESTARTI2C, GC, ROOM, SAVEIMAGE, LOADIMAGE, CLS, PINMODE, DIGITALREAD, DIGITALWRITE,
                 ANALOGREAD, ANALOGWRITE, DELAY, MILLIS, SLEEP, NOTE, EDIT, PPRINT, PPRINTALL, AVAILABLE, WIFISERVER,
-                WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, RESETREASON, ENDFUNCTIONS
+                WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, RESETREASON, DEEPSLEEP, ENDFUNCTIONS
               };
 
 // Typedefs
@@ -1244,16 +1246,14 @@ void nonote (int pin) {
 
 void initsleep () { }
 
-void sleep (int secs) {
-  // Kaef: BEG deepsleep
-#ifdef ESP32
+void prepareSleepTimer(float secs) {
 #ifdef sdcardsupport
   pfstring(PSTR("Close sdcard files..."), pserial); pln(pserial); //Serial.flush();
   SDpfile.close(); SDgfile.close();
 #endif
   if (secs < 1) secs = 1;
-  // Isolate GPIO12 pin from external circuits. This is needed for modules
-  // which have an external pull-up resistor on GPIO12 (such as ESP32-WROVER)
+  // Isolate GPIO pins from external circuits. This is needed for modules
+  // which have an external pull-up resistor on GPIOs (such as ESP32-WROVER on GPIO12)
   // to minimize current consumption.
   // Other pins should be isolated too.
   rtc_gpio_isolate(GPIO_NUM_0);
@@ -1263,7 +1263,13 @@ void sleep (int secs) {
   rtc_gpio_isolate(GPIO_NUM_15);
   // one second 'normal' delay to give system some time to flush buffers
   secs--; delay(1000);
-  esp_sleep_enable_timer_wakeup(secs * 1E6);
+  esp_sleep_enable_timer_wakeup((int)(secs * 1E6));
+}
+
+void sleep (int secs) {
+  // Kaef: BEG deepsleep
+#ifdef ESP32
+  prepareSleepTimer(secs);
   esp_deep_sleep_start();
   // Kaef: END deepsleep
 #else
@@ -3275,6 +3281,28 @@ object *fn_resetreason (object *args, object *env) {
 }
 // END (Kaef reset_reason)
 
+object *fn_deepsleep(object *args, object *env) {
+#ifdef ESP8266
+  error(PSTR("Not supported on ESP8266"));
+#elif (defined ESP32)
+  while (args != NULL) {
+    object *current_arg = car(args);
+    if ((integerp(current_arg)) || (floatp(current_arg))) {
+      //Serial.println("preparingSleepTimer...");
+      prepareSleepTimer(intfloat(current_arg));
+    } else if(listp(current_arg)) {
+        error(PSTR("deepsleep wakeup GPIO will be supported soon!"));
+    }
+    else {
+        error(PSTR("wrong argument type"));
+    }
+    args = cdr(args);
+  }
+  esp_deep_sleep_start();
+
+#endif
+  return nil;
+}
 // Built-in procedure names - stored in PROGMEM
 
 const char string0[] PROGMEM = "symbols";
@@ -3459,7 +3487,7 @@ const char string178[] PROGMEM = "connected";
 const char string179[] PROGMEM = "wifi-localip";
 const char string180[] PROGMEM = "wifi-connect";
 const char string181[] PROGMEM = "reset-reason"; // (Kaef reset_reason)
-
+const char string182[] PROGMEM = "deep-sleep";   // (Kaef deep-sleep)
 const tbl_entry_t lookup_table[] PROGMEM = {
   { string0, NULL, NIL, NIL },
   { string1, NULL, 0, 0 },
@@ -3642,7 +3670,8 @@ const tbl_entry_t lookup_table[] PROGMEM = {
   { string178, fn_connected, 1, 1 },
   { string179, fn_wifilocalip, 0, 0 },
   { string180, fn_wificonnect, 0, 2 },
-  { string181, fn_resetreason, 0, 0 }, // (Kaef reset_reason)
+  { string181, fn_resetreason, 0, 0 }, // (Kaef reset-reason)
+  { string182, fn_deepsleep, 1, 2},    // (Kaef deep-sleep)
 };
 
 // Table lookup functions
