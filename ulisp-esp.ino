@@ -27,6 +27,25 @@
             2018-11-07 Kaef   beginning deep-sleep
                                 an integer or float argument leads to timer-deepsleep
                                 TODO: add external wakeup '('(port logic-function) ['(port logic-function)])
+                              Need to redesign this function:
+                                (1) enable-timer-wakeup(secs)
+                                (2) deep-sleep-start()
+                                  (1+2 is the same as sleep(), but time and activation are separated)
+                                (3) enable-ext0-wakeup(port, level)
+                                (4) get-sleep-wakeup-cause()
+                                (5) disable-wakeup-source(source)
+                                (*) gpio-wakeup (light sleep only)
+                                (*) light-sleep-start()
+                                (*) enable-uart-wakeup(num_chars)
+                                (*) enable-ext1-wakeup
+                                (-) get-ext1-wakeup-status
+                                (-) enable-touchpad-wakeup
+                                (-) get-touchpad-wakeup-status
+                                (-) sleep-pd-config(...)
+                                --- explanation:
+                                  (N) functions to implement (ordered)
+                                  (*) functions maybe implemented later
+                                  (-) functions not planed to be implemented
             2018-10-20 Kaef   message to suppress resetautorun-function
             2018-10-19 Kaef   autorunimage is working, addmissing pinMode() call
             2018-10-19 Kaef   print uLisp start message at begin of setup()
@@ -148,7 +167,7 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 MAKUNBOUND, BREAK, READ, PRIN1, PRINT, PRINC, TERPRI, READBYTE, READLINE, WRITEBYTE, WRITESTRING,
                 WRITELINE, RESTARTI2C, GC, ROOM, SAVEIMAGE, LOADIMAGE, CLS, PINMODE, DIGITALREAD, DIGITALWRITE,
                 ANALOGREAD, ANALOGWRITE, DELAY, MILLIS, SLEEP, NOTE, EDIT, PPRINT, PPRINTALL, AVAILABLE, WIFISERVER,
-                WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, RESETREASON, DEEPSLEEP, ENDFUNCTIONS
+                WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, RESETREASON, ENDFUNCTIONS
               };
 
 // Typedefs
@@ -1246,12 +1265,7 @@ void nonote (int pin) {
 
 void initsleep () { }
 
-void prepareSleepTimer(float secs) {
-#ifdef sdcardsupport
-  pfstring(PSTR("Close sdcard files..."), pserial); pln(pserial); //Serial.flush();
-  SDpfile.close(); SDgfile.close();
-#endif
-  if (secs < 1) secs = 1;
+void isolatePins () {
   // Isolate GPIO pins from external circuits. This is needed for modules
   // which have an external pull-up resistor on GPIOs (such as ESP32-WROVER on GPIO12)
   // to minimize current consumption.
@@ -1261,6 +1275,15 @@ void prepareSleepTimer(float secs) {
   rtc_gpio_isolate(GPIO_NUM_5);
   rtc_gpio_isolate(GPIO_NUM_12);
   rtc_gpio_isolate(GPIO_NUM_15);
+}
+
+void prepareSleepTimer (float secs) {
+#ifdef sdcardsupport
+  pfstring(PSTR("Close sdcard files..."), pserial); pln(pserial); //Serial.flush();
+  SDpfile.close(); SDgfile.close();
+#endif
+  if (secs < 1) secs = 1;
+  isolatePins();
   // one second 'normal' delay to give system some time to flush buffers
   secs--; delay(1000);
   esp_sleep_enable_timer_wakeup((int)(secs * 1E6));
@@ -2979,6 +3002,9 @@ object *fn_cls (object *args, object *env) {
 object *fn_pinmode (object *args, object *env) {
   (void) env;
   int pin = integer(first(args));
+  #ifdef ESP32
+  rtc_gpio_deinit((gpio_num_t)pin); // Kaef: if this pin was used to wakeup from deepsleep reconfigure it
+  #endif
   object *mode = second(args);
   if ((integerp(mode) && mode->integer == 1) || mode != nil) pinMode(pin, OUTPUT);
   else if (integerp(mode) && mode->integer == 2) pinMode(pin, INPUT_PULLUP);
@@ -3280,29 +3306,47 @@ object *fn_resetreason (object *args, object *env) {
   return nil;
 }
 // END (Kaef reset_reason)
-
-object *fn_deepsleep(object *args, object *env) {
+/* TODO TODO TODO TODO TODO */
+/* *
+object *fn_deepsleeptimer (object *args, object *env) {
 #ifdef ESP8266
   error(PSTR("Not supported on ESP8266"));
 #elif (defined ESP32)
+  int extCount = 0;
   while (args != NULL) {
     object *current_arg = car(args);
     if ((integerp(current_arg)) || (floatp(current_arg))) {
       //Serial.println("preparingSleepTimer...");
       prepareSleepTimer(intfloat(current_arg));
-    } else if(listp(current_arg)) {
-        error(PSTR("deepsleep wakeup GPIO will be supported soon!"));
+    } else if (listp(current_arg)) {
+        object *port = first(current_arg);
+        object *level = second(current_arg);
+        if (integerp(port) && integerp(level)) {
+            int iport = integer(port);
+            int ilevel = integer(level);
+            switch(extCount) {
+                case 0: esp_sleep_enable_ext0_wakeup((gpio_num_t)iport, ilevel); break;
+                case 1: esp_sleep_enable_ext1_wakeup((gpio_num_t)iport, (esp_sleep_ext1_wakeup_mode_t)ilevel); break;
+                default: error(PSTR("Only two external interrupts allowed"));
+            }
+            pstring(PSTR("Ext"), pserial); pint(extCount, pserial);
+            pstring(PSTR(" Port: "), pserial); pint(iport, pserial);
+            pstring(PSTR(" Level: "), pserial); pint(ilevel, pserial); pfl(pserial);
+            extCount++;
+        } else error(PSTR("list must have two integer members"));
+      
     }
     else {
-        error(PSTR("wrong argument type"));
+      error(PSTR("wrong argument type"));
     }
     args = cdr(args);
   }
-  esp_deep_sleep_start();
+  Serial.println("esp_deep_sleep_start()");
 
 #endif
   return nil;
 }
+// */
 // Built-in procedure names - stored in PROGMEM
 
 const char string0[] PROGMEM = "symbols";
@@ -3487,7 +3531,6 @@ const char string178[] PROGMEM = "connected";
 const char string179[] PROGMEM = "wifi-localip";
 const char string180[] PROGMEM = "wifi-connect";
 const char string181[] PROGMEM = "reset-reason"; // (Kaef reset_reason)
-const char string182[] PROGMEM = "deep-sleep";   // (Kaef deep-sleep)
 const tbl_entry_t lookup_table[] PROGMEM = {
   { string0, NULL, NIL, NIL },
   { string1, NULL, 0, 0 },
@@ -3671,7 +3714,6 @@ const tbl_entry_t lookup_table[] PROGMEM = {
   { string179, fn_wifilocalip, 0, 0 },
   { string180, fn_wificonnect, 0, 2 },
   { string181, fn_resetreason, 0, 0 }, // (Kaef reset-reason)
-  { string182, fn_deepsleep, 1, 2},    // (Kaef deep-sleep)
 };
 
 // Table lookup functions
