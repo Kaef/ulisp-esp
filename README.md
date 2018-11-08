@@ -35,8 +35,9 @@ At the beginning I will support the following functions:
   Returns wakeup-time or throughs an error (non integer or negativ parameter).
 * deep-sleep-start()
 
-  Sets the system in deepsleep mode (see Espressif-documentation for details) with the
-  previous set wakeup-mode(s). It is neccessary to set the wakeup-mode(s) before calling this function.
+  Sets the system to deepsleep mode (see Espressif-documentation for details) with the
+  previous set wakeup-mode(s). It is important to set at least one wakeup-mode before calling this function,
+  otherwise the system will sleep **very** long (don't know if it wakes up sometime...).
 
   If sdcardsupport is defined the function needs ~200ms to close open files (caused by a delay() to enable flushing buffers).
   
@@ -50,7 +51,7 @@ At the beginning I will support the following functions:
 
   To reduce the current consumption in sleep-modes you can isolate the gpios which have external
   pullup- or pulldown-resistors.
-  TODO: I'm not sure wheather it's a good idea to isolate GPIOs which are configured for wakeup... *tbd*
+  TODO: I'm not sure wheather it's a good idea to isolate GPIOs which are configured for wakeup... **tbd**
   ```
   (isolate-gpio <GPIO_NUM>)
   ```
