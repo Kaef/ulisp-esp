@@ -30,9 +30,11 @@ At the beginning I will support the following functions:
   (deep-sleep-start)
   ```
 * deep-sleep-start()
+
   Sets the system in deepsleep mode (see Espressif-documentation for details) with the
   previous set wakeup-mode(s). It is neccessary to set the wakeup-mode(s) before calling this function.
 * isolate-gpio()
+
   To reduce the current consumption in sleep-modes you can isolate the gpios which have external
   pullup- or pulldown-resistors.
   TODO: I'm not sure wheather it's a good idea to isolate GPIOs which are configured for wakeup... *tbd*
@@ -40,10 +42,13 @@ At the beginning I will support the following functions:
   (isolate-gpio <GPIO_NUM>)
   ```
 * enable-ext0-wakeup(port, level)
+
   tbd.
 * get-sleep-wakeup-cause()
+
   tbd.
 * disable-wakeup-source(source)
+
   tbd.
 
 There's no support (at least in the first step) for:
