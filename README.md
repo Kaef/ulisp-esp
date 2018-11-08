@@ -32,11 +32,14 @@ At the beginning I will support the following functions:
   ```
   (deep-sleep-start)
   ```
+  Returns wakeup-time or throughs an error (non integer or negativ parameter).
 * deep-sleep-start()
 
   Sets the system in deepsleep mode (see Espressif-documentation for details) with the
   previous set wakeup-mode(s). It is neccessary to set the wakeup-mode(s) before calling this function.
 
+  If sdcardsupport is defined the function needs ~200ms to close open files (caused by a delay() to enable flushing buffers).
+  
   The system restarts after wakeup, so you need to check (reset-reason) to decide if the system
   restarts due a power cycle or due sleep-wakeup. For detailed information of the wakeup-cause see
   (get-sleep-wakeup-cause) below.
@@ -51,6 +54,10 @@ At the beginning I will support the following functions:
   ```
   (isolate-gpio <GPIO_NUM>)
   ```
+  GPIOs allowed to isolate are: 0..5, 12-33
+  (because 6..11 are used for SPI-flash, 34..39 has no software pullup or pulldown)
+  see Espressif documentation of rtc_gpio_isolate() for details.
+  Returns GPIO-num on success or nil if GPIO_NUM can't be isolated.
 * enable-ext0-wakeup(port, level)
 
   tbd.
