@@ -22,10 +22,13 @@ add separate functions to activate the wakeup-sources, rather similar to the
 Espressif idf-framework (but not complete).
 At the beginning I will support the following functions:
 * enable-timer-wakeup(secs)
+
+  secs can be a positive integer or float value
   ```
   (enable-timer-wakeup 10)
+  (enable-timer-wakeup 20.5)
   ```
-  will configure the timer-wakeup after 10 seconds. To enter deepsleep you need to call
+  will configure the timer-wakeup 10 (20.5) seconds after entering sleep-mode. To enter deepsleep-mode you need to call
   ```
   (deep-sleep-start)
   ```
@@ -33,6 +36,13 @@ At the beginning I will support the following functions:
 
   Sets the system in deepsleep mode (see Espressif-documentation for details) with the
   previous set wakeup-mode(s). It is neccessary to set the wakeup-mode(s) before calling this function.
+
+  The system restarts after wakeup, so you need to check (reset-reason) to decide if the system
+  restarts due a power cycle or due sleep-wakeup. For detailed information of the wakeup-cause see
+  (get-sleep-wakeup-cause) below.
+  The system-restart takes some seconds and ulisp boots completely (all informations from before deep-sleeping
+  will be lost!). To continue with your ulisp program you need to use (save-image 'function) or
+  the LispLibrary-function to load and start your code.
 * isolate-gpio()
 
   To reduce the current consumption in sleep-modes you can isolate the gpios which have external
