@@ -22,6 +22,9 @@ add separate functions to activate the wakeup-sources, rather similar to the
 Espressif idf-framework (but not complete).
 At the beginning I will support the following functions:
 * enable-timer-wakeup(secs)
+  ```
+  (enable-timer-wakeup 10)
+  ```
 * deep-sleep-start()
 * isolate-gpio()
 * enable-ext0-wakeup(port, level)
