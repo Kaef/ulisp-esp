@@ -29,15 +29,13 @@ At the beginning I will support the following functions:
   (enable-timer-wakeup 20.5)
   ```
   will configure the timer-wakeup 10 (20.5) seconds after entering sleep-mode. To enter deepsleep-mode you need to call
-  ```
-  (deep-sleep-start)
-  ```
+  (deep-sleep-start).
   Returns wakeup-time or throughs an error (non integer or negativ parameter).
 * deep-sleep-start()
 
   Sets the system to deepsleep mode (see Espressif-documentation for details) with the
   previous set wakeup-mode(s). It is important to set at least one wakeup-mode before calling this function,
-  otherwise the system will sleep **very** long (don't know if it wakes up sometime...).
+  otherwise the command abords with an error message ("Deepsleep-Mode not configured, cancled!").
 
   If sdcardsupport is defined the function needs ~200ms to close open files (caused by a delay() to enable flushing buffers).
   
