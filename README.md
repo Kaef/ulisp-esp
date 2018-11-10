@@ -35,7 +35,7 @@ At the beginning I will support the following functions:
 
   Sets the system to deepsleep mode (see Espressif-documentation for details) with the
   previous set wakeup-mode(s). It is important to set at least one wakeup-mode before calling this function,
-  otherwise the command abords with an error message ("Deepsleep-Mode not configured, cancled!").
+  otherwise the command abords with an error message ("Please configure deepsleep-mode(s) first!").
 
   If sdcardsupport is defined the function needs ~200ms to close open files (caused by a delay() to enable flushing buffers).
   

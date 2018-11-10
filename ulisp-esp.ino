@@ -3343,7 +3343,7 @@ object *fn_deepsleepstart (object *args, object *env) {
 #ifdef ESP8266
   error(PSTR("Not supported on ESP8266"));
 #elif (defined ESP32)
-  if (!deepsleepModeConfigured) error(PSTR("Deepsleep-Mode not configured, cancled!"));
+  if (!deepsleepModeConfigured) error(PSTR("Please configure deepsleep-mode(s) first!"));
   shutdownSDCard();
   pfstring(PSTR("Entering deepsleep..."), pserial);
   delay(200); // give some time to flush buffers...
