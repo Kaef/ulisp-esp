@@ -77,7 +77,7 @@
 #define serialmonitor
 //#define printgcs
 #define sdcardsupport /* not working for ESP8266! */
-#define lisplibrary
+//#define lisplibrary
 
 #ifdef sdcardsupport
 //#define SD_CARD_DEBUG
@@ -234,6 +234,7 @@ unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PS
 #define SDCARD_CLK_IO   18 /* Arduino standard: 18 */
 #define SDCARD_MISO_IO  19 /* Arduino standard: 19 */
 #define SDCARD_MOSI_IO  23 /* Arduino standard: 23 */
+bool deepsleepModeConfigured = false;
 #endif
 uint8_t _end;
 typedef int BitOrder;
@@ -3323,7 +3324,10 @@ object *fn_enabletimerwakeup (object *args, object *env) {
 #elif (defined ESP32)
   object *current_arg = car(args);
   if ((integerp(current_arg)) || (floatp(current_arg))) {
-    if(intfloat(current_arg) >= 0.) prepareSleepTimer(intfloat(current_arg), false);
+    if(intfloat(current_arg) >= 0.) {
+        prepareSleepTimer(intfloat(current_arg), false);
+        deepsleepModeConfigured = true;
+    }
     else error(PSTR("Argument must be >= 0!"));
   } else {
     error(PSTR("Argument should be integer or float!"));
@@ -3339,7 +3343,9 @@ object *fn_deepsleepstart (object *args, object *env) {
 #ifdef ESP8266
   error(PSTR("Not supported on ESP8266"));
 #elif (defined ESP32)
+  if (!deepsleepModeConfigured) error(PSTR("Deepsleep-Mode not configured, cancled!"));
   shutdownSDCard();
+  pfstring(PSTR("Entering deepsleep..."), pserial);
   delay(200); // give some time to flush buffers...
   esp_deep_sleep_start();
 #else
@@ -4435,7 +4441,10 @@ void setup () {
   while (millis() - start < 5000) {
     if (Serial) break;
   }
-  pln(pserial); pfstring(PSTR("uLisp 2.4a (forked)"), pserial); pln(pserial);
+  pln(pserial); pfstring(PSTR("uLisp 2.4a -- forked and extended by Kaef (https://github.com/kaef)"), pserial); pln(pserial);
+  pfstring(PSTR("(c) by David Johnson-Davies - www.technoblogy.com"), pserial); pln(pserial);
+  pfstring(PSTR("Licensed under the MIT license: https://opensource.org/licenses/MIT"), pserial); pln(pserial);
+  pln(pserial); pfstring(PSTR("System information:"), pserial); pln(pserial);
 #ifdef ESP32
   pfstring(PSTR("  reset reason: "), pserial); pint(rtc_get_reset_reason(0), pserial); pln(pserial); // Kaef deepsleep
 #endif
