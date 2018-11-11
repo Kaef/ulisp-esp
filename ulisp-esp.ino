@@ -35,9 +35,9 @@
                                 (3) isolate-gpio()
                                 (4) enable-ext0-wakeup(port, level)
                                 (5) get-sleep-wakeup-cause()
-                                (6) disable-wakeup-source(source)
-                                (*) gpio-wakeup (light sleep only)
-                                (*) light-sleep-start()
+                                (6) gpio-wakeup (light sleep only)
+                                (6) light-sleep-start()
+                                (*) disable-wakeup-source(source)
                                 (*) enable-uart-wakeup(num_chars)
                                 (*) enable-ext1-wakeup
                                 (-) get-ext1-wakeup-status
@@ -3411,7 +3411,7 @@ object *fn_enableExt0Wakeup (object *args, object *env) {
     if (success) {
       if (ESP_OK == esp_sleep_enable_ext0_wakeup((gpio_num_t)integer(opin), integer(olevel))) {
         deepsleepModeConfigured = true;
-        return opin;
+        return args;
       } else {
         return nil;
       }

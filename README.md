@@ -29,6 +29,7 @@ Espressif idf-framework (not all functions supported).
   You can use (get-reset-reason) and (get-sleep-wakeup-cause) to find out what happend.
 
 At the beginning I will support the following functions:
+
 * enable-timer-wakeup(secs)
 
   secs can be a positive integer or float value
@@ -53,11 +54,12 @@ At the beginning I will support the following functions:
   The system-restart takes some seconds and ulisp boots completely (all informations from before deep-sleeping
   will be lost!). To continue with your ulisp program you need to use (save-image 'function) or
   the LispLibrary-function to load and start your code.
+
 * isolate-gpio(<GPIO_NUM>)
 
   To reduce the current consumption in sleep-modes you can isolate the gpios which have external
   pullup- or pulldown-resistors.
-  TODO: I'm not sure wheather it's a good idea to isolate GPIOs which are configured for wakeup... **tbd**
+  I'm not sure wheather it's a good idea to isolate GPIOs which are configured for wakeup (but it seems to work correctly).
   ```
   (isolate-gpio 25)
   ```
@@ -65,6 +67,10 @@ At the beginning I will support the following functions:
   (because 6..11 are used for SPI-flash, 34..39 has no software pullup or pulldown so there's no need to isolate)
   see Espressif documentation of rtc_gpio_isolate() for details.
   Returns GPIO-num on success or nil if GPIO_NUM can't be isolated.
+
+  Known issue: there seems to be a problem using isolated pins after wakeup -- I'll investigate to fix this
+  (I already called rtc_gpio_deinit(gpio) when using pinmode, but this seems to be not correct -- any suggestions?)
+  
 * enable-ext0-wakeup(<GPIO_NUM>, <LEVEL>)
 
   Use a GPIO to wakeup the system. Allowed GPIOs are: 0, 2, 4, 12..15, 25..27, 32..39 (see Espressif documentation).
@@ -73,23 +79,24 @@ At the beginning I will support the following functions:
   (enable-ext0-wakeup 0 0)
   ```
   This enables a LOW signal on GPIO0 to wakeup the system. Call (deepsleep-start) to enter deepsleep mode.
-  
+
+  Returns: list of given arguments on success, error-message if it fails.
+
 * get-sleep-wakeup-cause()
 
   Returns the sleep-wakup-cause, see Espressif-documentation for details.
-  Here are some values I saw on my system:
-    Return-value | cause
-         0          no sleep wakeup
-         1          ext0 sleep wakeup
-         3          timer wakeup
+  Here are some values I saw on my system: 0: no sleep wakeup (maybe normal boot), 1: ext0 sleep wakeup, 3: timer wakeup
        
-* disable-wakeup-source(source)
+* gpio-wakeup (light sleep only)
 
   tbd.
 
-There's no support (at least in the first step) for:
-* gpio-wakeup (light sleep only)
 * light-sleep-start()
+
+  tbd.
+  
+There's no support (at least in the first step) for:
+* disable-wakeup-source(source)
 * enable-uart-wakeup(num_chars)
 * enable-ext1-wakeup
 * get-ext1-wakeup-status
