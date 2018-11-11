@@ -96,6 +96,8 @@
 extern "C" {
 #include <driver/rtc_io.h> // (Kaef deepsleep) rtc_gpio_isolate()
 #include <rom/rtc.h>       // (Kaef reset_reason) rtc_get_reset_reason(int cpuNum)
+#include <esp_wifi.h>      // esp_wifi_stop()
+#include <esp_sleep.h>     // esp_sleep_get_wakeup_cause()
 }
 #endif
 // Kaef: END deepsleep
@@ -170,7 +172,7 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 WRITELINE, RESTARTI2C, GC, ROOM, SAVEIMAGE, LOADIMAGE, CLS, PINMODE, DIGITALREAD, DIGITALWRITE,
                 ANALOGREAD, ANALOGWRITE, DELAY, MILLIS, SLEEP, NOTE, EDIT, PPRINT, PPRINTALL, AVAILABLE, WIFISERVER,
                 WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, RESETREASON, ENABLETIMERWAKEUP, DEEPSLEEPSTART,
-                ISOLATEGPIO, ENDFUNCTIONS
+                ISOLATEGPIO, ENABLEEXT0WAKEUP, GETSLEEPWAKEUPCAUSE, ENDFUNCTIONS
               };
 
 // Typedefs
@@ -1298,7 +1300,7 @@ void sleep (int secs) {
 #ifdef ESP32
 #ifdef sdcardsupport
   shutdownSDCard();
-    if (secs < 1) secs = 1;
+  if (secs < 1) secs = 1;
   // one second 'normal' delay to give system some time to flush buffers
   secs--; delay(1000);
 #endif
@@ -3324,9 +3326,9 @@ object *fn_enabletimerwakeup (object *args, object *env) {
 #elif (defined ESP32)
   object *current_arg = car(args);
   if ((integerp(current_arg)) || (floatp(current_arg))) {
-    if(intfloat(current_arg) >= 0.) {
-        prepareSleepTimer(intfloat(current_arg), false);
-        deepsleepModeConfigured = true;
+    if (intfloat(current_arg) >= 0.) {
+      prepareSleepTimer(intfloat(current_arg), false);
+      deepsleepModeConfigured = true;
     }
     else error(PSTR("Argument must be >= 0!"));
   } else {
@@ -3343,10 +3345,12 @@ object *fn_deepsleepstart (object *args, object *env) {
 #ifdef ESP8266
   error(PSTR("Not supported on ESP8266"));
 #elif (defined ESP32)
-  if (!deepsleepModeConfigured) error(PSTR("Please configure deepsleep-mode(s) first!"));
+  if (!deepsleepModeConfigured) error(PSTR("Please configure wakeup-mode(s) first!"));
   shutdownSDCard();
   pfstring(PSTR("Entering deepsleep..."), pserial);
   delay(200); // give some time to flush buffers...
+  //esp_bluedroid_disable(); esp_bt_controller_disable(); // BT not used at the moment
+  // esp_wifi_stop(); // should be called (Espressif), but leads to segfault!
   esp_deep_sleep_start();
 #else
 #error "Platform not supported!"
@@ -3360,19 +3364,76 @@ object *fn_isolategpio (object *args, object *env) {
   error(PSTR("Not supported on ESP8266"));
 #elif (defined ESP32)
   int pins[] = {0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-                21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33};
+                21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33
+               };
   object *current_arg = car(args);
   if (integerp(current_arg)) {
     bool success = false;
-    for(int i=0; i < (sizeof(pins) / sizeof(pins[0])); i++) {
-        if(pins[i] == integer(current_arg)) { success = true; break; }
+    for (int i = 0; i < (sizeof(pins) / sizeof(pins[0])); i++) {
+      if (pins[i] == integer(current_arg)) {
+        success = true;
+        break;
+      }
     }
-    if(success) { rtc_gpio_isolate((gpio_num_t)integer(current_arg)); return current_arg; }
+    if (success) {
+      rtc_gpio_isolate((gpio_num_t)integer(current_arg));
+      return current_arg;
+    } else {
+      error(PSTR("Pin not valid"));
+    }
+
   } else {
     error(PSTR("Argument should be integer (GPIO_NUM)!"));
   }
 #else
 #error "Platform not supported!"
+#endif
+  return nil;
+}
+
+object *fn_enableExt0Wakeup (object *args, object *env) {
+  (void) args, (void) env;
+#ifdef ESP8266
+  error(PSTR("Not supported on ESP8266"));
+#elif (defined ESP32)
+  int pins[] = {0, 2, 4, 12, 13, 14, 15, 25, 26, 27, 32, 33, 34, 35, 36, 37, 38, 39};
+  object *opin = first(args);
+  object *olevel = second(args);
+  if (integerp(opin) && integerp(olevel)) {
+    bool success = false;
+    for (int i = 0; i < (sizeof(pins) / sizeof(pins[0])); i++) {
+      if (pins[i] == integer(opin)) {
+        success = true;
+        break;
+      }
+    }
+    if ((integer(olevel) < 0) || (integer(olevel) > 1)) error(PSTR("Level should be 0 or 1"));
+    if (success) {
+      if (ESP_OK == esp_sleep_enable_ext0_wakeup((gpio_num_t)integer(opin), integer(olevel))) {
+        deepsleepModeConfigured = true;
+        return opin;
+      } else {
+        return nil;
+      }
+    } else {
+      error(PSTR("Pin not valid"));
+    }
+
+  } else {
+    error(PSTR("Arguments should be integer (GPIO_NUM, level (0, 1))!"));
+  }
+#else
+#error "Platform not supported!"
+#endif
+  return nil;
+}
+
+object *fn_getSleepWakeupCause (object *args, object *env) {
+  (void) args, (void) env;
+#ifdef ESP8266
+  error(PSTR("Not supported on ESP8266"));
+#elif (defined ESP32)
+  return number(esp_sleep_get_wakeup_cause());
 #endif
   return nil;
 }
@@ -3564,6 +3625,8 @@ const char string181[] PROGMEM = "reset-reason"; // (Kaef reset_reason)
 const char string182[] PROGMEM = "enable-timer-wakeup";
 const char string183[] PROGMEM = "deepsleep-start";
 const char string184[] PROGMEM = "isolate-gpio";
+const char string185[] PROGMEM = "enable-ext0-wakeup";
+const char string186[] PROGMEM = "get-sleep-wakeup-cause";
 
 const tbl_entry_t lookup_table[] PROGMEM = {
   { string0, NULL, NIL, NIL },
@@ -3751,6 +3814,8 @@ const tbl_entry_t lookup_table[] PROGMEM = {
   { string182, fn_enabletimerwakeup, 1, 1},
   { string183, fn_deepsleepstart, 0, 0},
   { string184, fn_isolategpio, 1, 1},
+  { string185, fn_enableExt0Wakeup, 2, 2},
+  { string186, fn_getSleepWakeupCause, 0, 0},
 };
 
 // Table lookup functions
@@ -4446,7 +4511,8 @@ void setup () {
   pfstring(PSTR("Licensed under the MIT license: https://opensource.org/licenses/MIT"), pserial); pln(pserial);
   pln(pserial); pfstring(PSTR("System information:"), pserial); pln(pserial);
 #ifdef ESP32
-  pfstring(PSTR("  reset reason: "), pserial); pint(rtc_get_reset_reason(0), pserial); pln(pserial); // Kaef deepsleep
+  pfstring(PSTR("  reset reason: "), pserial); pint(rtc_get_reset_reason(0), pserial);
+  pfstring(PSTR("  wakeup cause: "), pserial); pint(esp_sleep_get_wakeup_cause(), pserial); pln(pserial);
 #endif
   pfstring(PSTR("  compiled: "), pserial);
   pfstring(PSTR(__DATE__), pserial); pfstring(PSTR(" "), pserial);
