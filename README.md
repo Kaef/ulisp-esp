@@ -42,6 +42,7 @@ At the beginning I will support the following functions:
   will configure the timer-wakeup 10 (20.5) seconds after entering sleep-mode. To enter deepsleep-mode you need to call
   (deep-sleep-start).
   Returns wakeup-time or throughs an error (non integer or negativ parameter).
+  
 * deep-sleep-start()
 
   Sets the system to deepsleep mode (see Espressif-documentation for details) with the
@@ -57,7 +58,7 @@ At the beginning I will support the following functions:
   will be lost!). To continue with your ulisp program you need to use (save-image 'function) or
   the LispLibrary-function to load and start your code.
 
-* isolate-gpio(<GPIO_NUM>)
+* isolate-gpio(GPIO_NUM)
 
   To reduce the current consumption in sleep-modes you can isolate the gpios which have external
   pullup- or pulldown-resistors.
@@ -71,7 +72,7 @@ At the beginning I will support the following functions:
   Returns GPIO-num on success or nil if GPIO_NUM can't be isolated.
 
   
-* enable-ext0-wakeup(<GPIO_NUM>, <LEVEL>)
+* enable-ext0-wakeup(GPIO_NUM, LEVEL)
 
   Use a GPIO to wakeup the system. Allowed GPIOs are: 0, 2, 4, 12..15, 25..27, 32..39 (see Espressif documentation).
   LEVEL must be 0 or 1.
@@ -87,11 +88,12 @@ At the beginning I will support the following functions:
   Returns the sleep-wakup-cause, see Espressif-documentation for details.
   Here are some values I saw on my system: 0: no sleep wakeup (maybe normal boot), 1: ext0 sleep wakeup, 3: timer wakeup
        
-* enable-gpio-wakeup(<GPIO_NUM>, <LEVEL>) (light sleep only)
+* enable-gpio-wakeup(GPIO_NUM, LEVEL) (light sleep only)
 
-  Configure any gpio to wakeup the system after lightsleep.
+  Configure any gpio (same GPIOs as for enable-ext0-wakeup possible) to wakeup the system after lightsleep.
+  LEVEL must be 0 or 1.
 
-  **WARNING: Wakeup does not work, I don't know the reason now. I will investigate in this topic.**
+  **WARNING: Wakeup does not work, at the moment I don't know the reason. I will investigate in this topic.**
   ```
   (enable-gpio-wakeup 0 0)
   ```
