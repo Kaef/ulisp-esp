@@ -93,7 +93,8 @@ At the beginning I will support the following functions:
   Configure any gpio (same GPIOs as for enable-ext0-wakeup possible) to wakeup the system after lightsleep.
   LEVEL must be 0 or 1.
 
-  **WARNING: Wakeup does not work, at the moment I don't know the reason. I will investigate in this topic.**
+  **WARNING: Wakeup does not work, because arduino-esp32-idf V. 1.0.0 is too old (esp_sleep_enable_gpio_wakeup() not supported).**
+  If calling this function ulisp returns an error message (I will fix it as soon as a newer arduino-esp32-idf version is released.)
   ```
   (enable-gpio-wakeup 0 0)
   ```

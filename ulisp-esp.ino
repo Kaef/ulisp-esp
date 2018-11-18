@@ -24,6 +24,7 @@
                                 esp_deep_sleep_start();
             TODO              read/write images from/to sd-card
             -----------------------------------------------------------------------------------------------
+            2018-11-18 Kaef   implemented (enable-gpio-wakeup), (lightsleep-start)
             2018-11-08 Kaef   implemented (enable-timer-wakup), (deepsleep-start), (isolate-gpio)
             2018-11-07 Kaef   beginning deep-sleep
                                 an integer or float argument leads to timer-deepsleep
@@ -36,6 +37,9 @@
                                 (4) enable-ext0-wakeup(port, level)
                                 (5) get-sleep-wakeup-cause()
                                 (6) gpio-wakeup (light sleep only)
+                                    2018-11-18:
+                                    Arduino-esp32-idf does not support this feature. 
+                                    Will be implemented when Version > 1.0.0 is released by Espressif.
                                 (6) light-sleep-start()
                                 (*) disable-wakeup-source(source)
                                 (*) enable-uart-wakeup(num_chars)
@@ -492,7 +496,8 @@ int compactimage (object **arg) {
     int idxMaxUsedCon = WORKSPACESIZE - 1;
     /* */
     for (int i = WORKSPACESIZE - 1; i >= 0; i--) {
-        if (Workspace[i].type != NULL) {
+        /* Kaef, 2018-11-18: user ZERO, not NULL to suppress compiler warning */
+        if (Workspace[i].type != ZERO) {
             idxMaxUsedCon = i;
             break;
         }
@@ -1312,7 +1317,7 @@ void sleep (int secs) {
         pfstring(PSTR("**ERR** WiFi or BT not stopped, using delay"), pserial); pln(pserial);
         delay(1000 * secs);
     }
-// Kaef: END deepsleep
+    // Kaef: END deepsleep
 #else
     delay(1000 * secs);
 #endif
@@ -3450,6 +3455,8 @@ object *fn_enableGpioWakeup (object *args, object *env) {
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
 #elif (defined ESP32)
+    error(PSTR("enable-gpio-wakeup not implemented yet, use enable-ext0-wakeup instead\n       (need to wait for update of ardiuino-idf (> 1.0.0))"));
+    
     int pins[] = {0, 2, 4, 12, 13, 14, 15, 25, 26, 27, 32, 33, 34, 35, 36, 37, 38, 39};
     object *opin = first(args);
     object *olevel = second(args);
@@ -3457,7 +3464,7 @@ object *fn_enableGpioWakeup (object *args, object *env) {
         bool success = false;
         for (int i = 0; i < (sizeof(pins) / sizeof(pins[0])); i++) {
             if (pins[i] == integer(opin)) {
-                success = true;
+                success = true; 
                 break;
             }
         }
@@ -3466,8 +3473,14 @@ object *fn_enableGpioWakeup (object *args, object *env) {
             gpio_int_type_t intLevel = GPIO_INTR_LOW_LEVEL;
             if (integer(olevel) == 1) intLevel = GPIO_INTR_HIGH_LEVEL;
             if (ESP_OK == gpio_wakeup_enable((gpio_num_t)integer(opin), intLevel)) {
-                sleepModeConfigured = true;
-                return args;
+                // sleepModeConfigured = true;
+                // function does not exists, but Espressif docu says it should be used...
+                // need to wait for arduino-esp32-idf > 1.0.0!!
+                /*
+                    if (ESP_OK == esp_sleep_enable_gpio_wakeup()) {
+                    sleepModeConfigured = true;
+                    return args;
+                    } else return nil; // */
             } else {
                 return nil;
             }
