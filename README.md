@@ -15,6 +15,7 @@ This is a fork of ulisp-esp (Version 2.4) where I added some features for esp32.
 * new lisp function: reset-reason
 * sleep uses esp32 deepsleep
 * Deepsleep functions (see below)
+* (sleep) uses lightsleep, because program will continue after sleep
 
 ### Deepsleep functions
 Because ESP32 has many wakeup possibilities which can be combined I decided to
@@ -68,8 +69,6 @@ At the beginning I will support the following functions:
   see Espressif documentation of rtc_gpio_isolate() for details.
   Returns GPIO-num on success or nil if GPIO_NUM can't be isolated.
 
-  Known issue: there seems to be a problem using isolated pins after wakeup -- I'll investigate to fix this
-  (I already called rtc_gpio_deinit(gpio) when using pinmode, but this seems to be not correct -- any suggestions?)
   
 * enable-ext0-wakeup(<GPIO_NUM>, <LEVEL>)
 
@@ -87,13 +86,21 @@ At the beginning I will support the following functions:
   Returns the sleep-wakup-cause, see Espressif-documentation for details.
   Here are some values I saw on my system: 0: no sleep wakeup (maybe normal boot), 1: ext0 sleep wakeup, 3: timer wakeup
        
-* gpio-wakeup (light sleep only)
+* enable-gpio-wakeup(<GPIO_NUM>, <LEVEL>) (light sleep only)
 
-  tbd.
+  Configure any gpio to wakeup the system after lightsleep.
 
-* light-sleep-start()
+  **WARNING: Wakeup does not work, I don't know the reason now. I will investigate in this topic.**
+  ```
+  (enable-gpio-wakeup 0 0)
+  ```
 
-  tbd.
+* lightsleep-start()
+
+  Sets the system to lightsleep mode. A wakeup must be enabled before calling this function, otherwise an error will be shown.
+
+  In contrast to deepsleep lightsleep will **not reboot** the system, but continue with the next instruction.
+  Therefore lightsleep works somewhat similar to delay, but some system components are powered off (see Espressif-documentation for details).
   
 There's no support (at least in the first step) for:
 * disable-wakeup-source(source)
