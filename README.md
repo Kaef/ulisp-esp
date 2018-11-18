@@ -15,7 +15,8 @@ This is a fork of ulisp-esp (Version 2.4) where I added some features for esp32.
 * new lisp function: reset-reason
 * sleep uses esp32 deepsleep
 * Deepsleep functions (see below)
-* (sleep) uses lightsleep, because program will continue after sleep
+* (sleep) uses lightsleep, therefore program will continue after sleep (this is the expected behaviour for sleep;
+  restarting the system (as deepsleep does) is very unusual).
 
 ### Deepsleep functions
 Because ESP32 has many wakeup possibilities which can be combined I decided to
