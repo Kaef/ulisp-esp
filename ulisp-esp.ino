@@ -1304,13 +1304,17 @@ void shutdownSDCard() {
 void sleep (int secs) {
     // Kaef: BEG lightsleep
 #ifdef ESP32
-    pfstring(PSTR("entering lightsleep..."), pserial); pln(pserial); delay(50);
+    pfstring(PSTR("entering lightsleep for "), pserial); pint(secs, pserial);
+    pfstring(PSTR(" seconds"), pserial); pln(pserial); delay(50);
+    // Kaef, 2018-11-20: no need to shutdown sd-card before entering lightsleep-mode...
+    /* *
 #ifdef sdcardsupport
     shutdownSDCard();
     if (secs < 1) secs = 1;
     // one second 'normal' delay to give system some time to flush buffers
     secs--; delay(1000);
 #endif
+    // */
     prepareSleepTimer(secs, true);
     //esp_deep_sleep_start();
     if (ESP_OK != esp_light_sleep_start()) {
