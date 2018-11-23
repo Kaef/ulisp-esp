@@ -4021,7 +4021,7 @@ EVAL:
     yield(); // Needed to avoid Soft WDT Reset
     // Enough space?
     if (End != 0xA5) error(PSTR("Stack overflow"));
-    if (Freespace < 20) gc(form, env);
+    if (Freespace < (WORKSPACESIZE / 10)) gc(form, env);
     // Escape
     if (tstflag(ESCAPE)) {
         clrflag(ESCAPE);
