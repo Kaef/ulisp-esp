@@ -17,6 +17,11 @@ This is a fork of ulisp-esp (Version 2.4) where I added some features for esp32.
 * Deepsleep functions (see below)
 * (sleep) uses lightsleep, therefore program will continue after sleep (this is the expected behaviour for sleep;
   restarting the system (as deepsleep does) is very unusual).
+* added (debug-flags NUM) to enable/disable debug output
+  supported flags:
+    0x0001: DEBUG_SLEEP  -- debug information for sleep, lightsleep and deepsleep functions
+    0x0002: DEBUG_SDCARD -- debug information for sdcard (closing before deepsleep)
+  tbd.
 
 ### Deepsleep functions
 Because ESP32 has many wakeup possibilities which can be combined I decided to

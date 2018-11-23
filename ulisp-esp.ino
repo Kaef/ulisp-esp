@@ -19,11 +19,13 @@
     ------------------------------------------------------------------------------------------------------
     Version 3.4a:
             TODO              external wakeup:
-                                esp_sleep_enable_ext0_wakeup(GPIO_NUM_n, x), x: 1=high, 0= low
                                 esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
                                 esp_deep_sleep_start();
             TODO              read/write images from/to sd-card
             -----------------------------------------------------------------------------------------------
+            2018-11-22 Kaef   added (debug-flags) with flags:
+                                0x0001: DEBUG_SLEEP
+                                0x0002: DEBUG_SDCARD
             2018-11-18 Kaef   implemented (enable-gpio-wakeup), (lightsleep-start)
             2018-11-08 Kaef   implemented (enable-timer-wakup), (deepsleep-start), (isolate-gpio)
             2018-11-07 Kaef   beginning deep-sleep
@@ -177,7 +179,8 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 WRITELINE, RESTARTI2C, GC, ROOM, SAVEIMAGE, LOADIMAGE, CLS, PINMODE, DIGITALREAD, DIGITALWRITE,
                 ANALOGREAD, ANALOGWRITE, DELAY, MILLIS, SLEEP, NOTE, EDIT, PPRINT, PPRINTALL, AVAILABLE, WIFISERVER,
                 WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, RESETREASON, ENABLETIMERWAKEUP, DEEPSLEEPSTART,
-                ISOLATEGPIO, ENABLEEXT0WAKEUP, GETSLEEPWAKEUPCAUSE, GPIOWAKEUP, LIGHTSLEEPSTART, ENDFUNCTIONS
+                ISOLATEGPIO, ENABLEEXT0WAKEUP, GETSLEEPWAKEUPCAUSE, GPIOWAKEUP, LIGHTSLEEPSTART,
+                DEBUGFLAGS, ENDFUNCTIONS
               };
 
 // Typedefs
@@ -241,8 +244,13 @@ unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PS
 #define SDCARD_CLK_IO   18 /* Arduino standard: 18 */
 #define SDCARD_MISO_IO  19 /* Arduino standard: 19 */
 #define SDCARD_MOSI_IO  23 /* Arduino standard: 23 */
-bool sleepModeConfigured = false;
 #endif
+bool sleepModeConfigured = false;
+
+#define DEBUG_SLEEP  ((unsigned int) 0x0001)
+#define DEBUG_SDCARD ((unsigned int) 0x0002)
+unsigned int debugFlags = 0;
+
 uint8_t _end;
 typedef int BitOrder;
 #endif
@@ -1296,7 +1304,9 @@ void prepareSleepTimer (float secs, bool isolate) {
 
 void shutdownSDCard() {
 #ifdef sdcardsupport
-    pfstring(PSTR("Close sdcard files..."), pserial); pln(pserial); //Serial.flush();
+    if(debugFlags & DEBUG_SDCARD) {
+        pfstring(PSTR("Close sdcard files..."), pserial); pln(pserial); //Serial.flush();
+    }
     SDpfile.close(); SDgfile.close();
 #endif
 }
@@ -1304,8 +1314,11 @@ void shutdownSDCard() {
 void sleep (int secs) {
     // Kaef: BEG lightsleep
 #ifdef ESP32
-    pfstring(PSTR("entering lightsleep for "), pserial); pint(secs, pserial);
-    pfstring(PSTR(" seconds"), pserial); pln(pserial); delay(50);
+    if(debugFlags & DEBUG_SLEEP) {
+      pfstring(PSTR("entering lightsleep for "), pserial); pint(secs, pserial);
+      pfstring(PSTR(" seconds"), pserial); pln(pserial); 
+    }
+    delay(50);
     // Kaef, 2018-11-20: no need to shutdown sd-card before entering lightsleep-mode...
     /* *
 #ifdef sdcardsupport
@@ -3363,8 +3376,8 @@ object *fn_deepsleepstart (object *args, object *env) {
 #elif (defined ESP32)
     if (!sleepModeConfigured) error(PSTR("Please configure wakeup-mode(s) first!"));
     shutdownSDCard();
-    pfstring(PSTR("Entering deepsleep..."), pserial);
-    delay(200); // give some time to flush buffers...
+    if(debugFlags & DEBUG_SLEEP) pfstring(PSTR("Entering deepsleep..."), pserial);
+    delay(50); // give some time to flush buffers...
     //esp_bluedroid_disable(); esp_bt_controller_disable(); // BT not used at the moment
     // esp_wifi_stop(); // should be called (Espressif), but leads to segfault!
     esp_deep_sleep_start();
@@ -3508,8 +3521,8 @@ object *fn_lightsleepstart (object *args, object *env) {
 #elif (defined ESP32)
     if (!sleepModeConfigured) error(PSTR("Please configure wakeup-mode(s) first!"));
     shutdownSDCard();
-    pfstring(PSTR("Entering lightsleep..."), pserial);
-    delay(200); // give some time to flush buffers...
+    if(debugFlags & DEBUG_SLEEP) pfstring(PSTR("Entering lightsleep..."), pserial);
+    delay(50); // give some time to flush buffers...
     //esp_bluedroid_disable(); esp_bt_controller_disable(); // BT not used at the moment
     // esp_wifi_stop(); // should be called (Espressif), but leads to segfault!
     if (ESP_OK != esp_light_sleep_start()) error(PSTR("WiFi or BT not stopped"));
@@ -3517,6 +3530,29 @@ object *fn_lightsleepstart (object *args, object *env) {
 #error "Platform not supported!"
 #endif
     return nil;
+}
+
+
+void printDebugStatus(unsigned int mask) {
+    if((debugFlags & mask) == 0) pfstring(PSTR(" not "), pserial);
+    pfstring(PSTR(" set"), pserial);
+}
+
+object *fn_debugFlags (object *args, object *env) {
+    (void) env;
+    if(args != NULL) {
+        object *mask = first(args);
+        if(integerp(mask)) {
+            debugFlags = integer(mask);  
+        }
+    }
+    pfstring(PSTR("Debug flags:"), pserial);
+    pfl(pserial); pfstring(PSTR("  0x0001: DEBGUG_SLEEP "), pserial);
+    printDebugStatus(DEBUG_SLEEP);
+    pfl(pserial); pfstring(PSTR("  0x0002: DEBGUG_SDCARD"), pserial);
+    printDebugStatus(DEBUG_SDCARD);
+    pfl(pserial);    
+    return cons(number(debugFlags), NULL);
 }
 
 // Built-in procedure names - stored in PROGMEM
@@ -3710,6 +3746,7 @@ const char string185[] PROGMEM = "enable-ext0-wakeup";
 const char string186[] PROGMEM = "get-sleep-wakeup-cause";
 const char string187[] PROGMEM = "enable-gpio-wakeup";
 const char string188[] PROGMEM = "lightsleep-start";
+const char string189[] PROGMEM = "debug-flags";
 
 const tbl_entry_t lookup_table[] PROGMEM = {
     { string0, NULL, NIL, NIL },
@@ -3901,6 +3938,7 @@ const tbl_entry_t lookup_table[] PROGMEM = {
     { string186, fn_getSleepWakeupCause, 0, 0},
     { string187, fn_enableGpioWakeup, 2, 2},
     { string188, fn_lightsleepstart, 0, 0},
+    { string189, fn_debugFlags, 0, 1},
 };
 
 // Table lookup functions
