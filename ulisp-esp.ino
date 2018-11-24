@@ -40,7 +40,7 @@
                                 (5) get-sleep-wakeup-cause()
                                 (6) gpio-wakeup (light sleep only)
                                     2018-11-18:
-                                    Arduino-esp32-idf does not support this feature. 
+                                    Arduino-esp32-idf does not support this feature.
                                     Will be implemented when Version > 1.0.0 is released by Espressif.
                                 (6) light-sleep-start()
                                 (*) disable-wakeup-source(source)
@@ -240,11 +240,12 @@ unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PS
 #define analogWrite(x,y) dacWrite((x),(y))
 #ifdef sdcardsupport
 // the names are a bit misleading: here, the gpio-nums has to be configured, not the pin nums!
-#define SDCARD_SS_PIN    5 /* Kaef sdcard */
-#define SDCARD_CLK_IO   18 /* Arduino standard: 18 */
-#define SDCARD_MISO_IO  19 /* Arduino standard: 19 */
-#define SDCARD_MOSI_IO  23 /* Arduino standard: 23 */
+#define SDCARD_SS_PIN     5 /* Kaef            :  5, WEMOS ESP32 WOVER: 13 */
+#define SDCARD_CLK_IO    18 /* Arduino standard: 18, WEMOS ESP32 WOVER: 14 */
+#define SDCARD_MISO_IO   19 /* Arduino standard: 19, WEMOS ESP32 WOVER:  2 */
+#define SDCARD_MOSI_IO   23 /* Arduino standard: 23, WEMOS ESP32 WOVER: 15 */
 #endif
+
 bool sleepModeConfigured = false;
 
 #define DEBUG_SLEEP  ((unsigned int) 0x0001)
@@ -1304,7 +1305,7 @@ void prepareSleepTimer (float secs, bool isolate) {
 
 void shutdownSDCard() {
 #ifdef sdcardsupport
-    if(debugFlags & DEBUG_SDCARD) {
+    if (debugFlags & DEBUG_SDCARD) {
         pfstring(PSTR("Close sdcard files..."), pserial); pln(pserial); //Serial.flush();
     }
     SDpfile.close(); SDgfile.close();
@@ -1314,20 +1315,20 @@ void shutdownSDCard() {
 void sleep (int secs) {
     // Kaef: BEG lightsleep
 #ifdef ESP32
-    if(debugFlags & DEBUG_SLEEP) {
-      pfstring(PSTR("entering lightsleep for "), pserial); pint(secs, pserial);
-      pfstring(PSTR(" seconds"), pserial); pln(pserial); 
+    if (debugFlags & DEBUG_SLEEP) {
+        pfstring(PSTR("entering lightsleep for "), pserial); pint(secs, pserial);
+        pfstring(PSTR(" seconds"), pserial); pln(pserial);
     }
     delay(50);
     // Kaef, 2018-11-20: no need to shutdown sd-card before entering lightsleep-mode...
     /* *
-#ifdef sdcardsupport
-    shutdownSDCard();
-    if (secs < 1) secs = 1;
-    // one second 'normal' delay to give system some time to flush buffers
-    secs--; delay(1000);
-#endif
-    // */
+        #ifdef sdcardsupport
+        shutdownSDCard();
+        if (secs < 1) secs = 1;
+        // one second 'normal' delay to give system some time to flush buffers
+        secs--; delay(1000);
+        #endif
+        // */
     prepareSleepTimer(secs, true);
     //esp_deep_sleep_start();
     if (ESP_OK != esp_light_sleep_start()) {
@@ -1622,6 +1623,19 @@ object *sp_withi2c (object *args, object *env) {
     return result;
 }
 
+void mySPIbegin () {
+    // Kaef sdcard
+    //SPI.begin(18, 19, 23, SDCARD_SS_PIN); // sck, miso, mosi, ss // Kaef, my (aka standard arduino) sd-card connections
+    //SPI.begin(14, 2, 15, SDCARD_SS_PIN); // sck, miso, mosi, ss  // Kaef, David's ds-card connections
+#if ((defined SDCARD_CLK_IO) && (defined SDCARD_MISO_IO) && (defined SDCARD_MOSI_IO) && (defined SDCARD_SS_PIN))
+    SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, SDCARD_SS_PIN);
+#else
+    SPI.begin();
+    pfstring(PSTR("*** WARNING SPI: not all gpios defined, using arduino standard SPI GPIOs! ***"), pserial);
+    pln(pserial);
+#endif
+}
+
 object *sp_withspi (object *args, object *env) {
     object *params = first(args);
     object *var = first(params);
@@ -1629,7 +1643,7 @@ object *sp_withspi (object *args, object *env) {
     int divider = 0, mode = 0, bitorder = 1;
     object *pair = cons(var, stream(SPISTREAM, pin));
     push(pair, env);
-    SPI.begin();
+    mySPIbegin();
     params = cddr(params);
     if (params != NULL) {
         int d = integer(eval(first(params), env));
@@ -1662,13 +1676,8 @@ object *sp_withsdcard (object *args, object *env) {
     object *var = first(params);
     object *filename = eval(second(params), env);
     params = cddr(params);
-
-    // Kaef sdcard
-    //SPI.begin(18, 19, 23, SDCARD_SS_PIN); // sck, miso, mosi, ss // Kaef, my (aka standard arduino) sd-card connections
-    //SPI.begin(14, 2, 15, SDCARD_SS_PIN); // sck, miso, mosi, ss  // Kaef, David's ds-card connections
-#if ((defined SDCARD_CLK_IO) && (defined SDCARD_MISO_IO) && (defined SDCARD_MOSI_IO) && (defined SDCARD_SS_PIN))
-    SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, SDCARD_SS_PIN);
-#endif
+    
+    mySPIbegin();
     SD.begin();
     int mode = 0;
     if (params != NULL && first(params) != NULL) mode = integer(first(params));
@@ -3376,7 +3385,7 @@ object *fn_deepsleepstart (object *args, object *env) {
 #elif (defined ESP32)
     if (!sleepModeConfigured) error(PSTR("Please configure wakeup-mode(s) first!"));
     shutdownSDCard();
-    if(debugFlags & DEBUG_SLEEP) pfstring(PSTR("Entering deepsleep..."), pserial);
+    if (debugFlags & DEBUG_SLEEP) pfstring(PSTR("Entering deepsleep..."), pserial);
     delay(50); // give some time to flush buffers...
     //esp_bluedroid_disable(); esp_bt_controller_disable(); // BT not used at the moment
     // esp_wifi_stop(); // should be called (Espressif), but leads to segfault!
@@ -3473,7 +3482,7 @@ object *fn_enableGpioWakeup (object *args, object *env) {
     error(PSTR("Not supported on ESP8266"));
 #elif (defined ESP32)
     error(PSTR("enable-gpio-wakeup not implemented yet, use enable-ext0-wakeup instead\n       (need to wait for update of ardiuino-idf (> 1.0.0))"));
-    
+
     int pins[] = {0, 2, 4, 12, 13, 14, 15, 25, 26, 27, 32, 33, 34, 35, 36, 37, 38, 39};
     object *opin = first(args);
     object *olevel = second(args);
@@ -3481,7 +3490,7 @@ object *fn_enableGpioWakeup (object *args, object *env) {
         bool success = false;
         for (int i = 0; i < (sizeof(pins) / sizeof(pins[0])); i++) {
             if (pins[i] == integer(opin)) {
-                success = true; 
+                success = true;
                 break;
             }
         }
@@ -3521,7 +3530,7 @@ object *fn_lightsleepstart (object *args, object *env) {
 #elif (defined ESP32)
     if (!sleepModeConfigured) error(PSTR("Please configure wakeup-mode(s) first!"));
     shutdownSDCard();
-    if(debugFlags & DEBUG_SLEEP) pfstring(PSTR("Entering lightsleep..."), pserial);
+    if (debugFlags & DEBUG_SLEEP) pfstring(PSTR("Entering lightsleep..."), pserial);
     delay(50); // give some time to flush buffers...
     //esp_bluedroid_disable(); esp_bt_controller_disable(); // BT not used at the moment
     // esp_wifi_stop(); // should be called (Espressif), but leads to segfault!
@@ -3534,16 +3543,16 @@ object *fn_lightsleepstart (object *args, object *env) {
 
 
 void printDebugStatus(unsigned int mask) {
-    if((debugFlags & mask) == 0) pfstring(PSTR(" not "), pserial);
+    if ((debugFlags & mask) == 0) pfstring(PSTR(" not "), pserial);
     pfstring(PSTR(" set"), pserial);
 }
 
 object *fn_debugFlags (object *args, object *env) {
     (void) env;
-    if(args != NULL) {
+    if (args != NULL) {
         object *mask = first(args);
-        if(integerp(mask)) {
-            debugFlags = integer(mask);  
+        if (integerp(mask)) {
+            debugFlags = integer(mask);
         }
     }
     pfstring(PSTR("Debug flags:"), pserial);
@@ -3551,7 +3560,7 @@ object *fn_debugFlags (object *args, object *env) {
     printDebugStatus(DEBUG_SLEEP);
     pfl(pserial); pfstring(PSTR("  0x0002: DEBGUG_SDCARD"), pserial);
     printDebugStatus(DEBUG_SDCARD);
-    pfl(pserial);    
+    pfl(pserial);
     return cons(number(debugFlags), NULL);
 }
 
@@ -4563,9 +4572,7 @@ void listDir(const char * dirname, uint8_t levels) {
 }
 
 void sd_test () {
-    //SPI.begin(18, 19, 23, SDCARD_SS_PIN); // sck, miso, mosi, ss
-    //SPI.begin(14, 2, 15, SDCARD_SS_PIN); // sck, miso, mosi, ss
-
+    mySPIbegin();
     Serial.print("SDCARD_SS_PIN = "); Serial.println(SDCARD_SS_PIN);
 
     if (!SD.begin(SDCARD_SS_PIN)) {
