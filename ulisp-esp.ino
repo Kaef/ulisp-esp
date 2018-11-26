@@ -4,17 +4,13 @@
     Licensed under the MIT license: https://opensource.org/licenses/MIT
 */
 /*
-    KNOWN ISSUES
-    2018-10-19:
-      (01) sometimes (save-image)(load-image) corrupts the workspace, image is not loaded (or saved?) correctly
-           FIX: unknown (need to do more tests to find out how to produce the error)
-      (02) sometimes (save-image) is discarded because image is too big (but it isn't!)
-           FIX: unknown (see (01), I think these belong together)
-      => added error, if EEPROM.commit() fails (Tag: "Kaef EEPROM")
-      => added EEPROM.end(), need to test if this fixes the issues 01 & 02 (Tag: "Kaef EEPROM")
-
 
     CHANGELOG
+
+      Warning: this list is only partial updated, see gitlog for detailed informations!
+               (List will be removed soon)
+
+      
     Version Date       Author Description                                            Tags in code
     ------------------------------------------------------------------------------------------------------
     Version 3.4a:
@@ -23,6 +19,7 @@
                                 esp_deep_sleep_start();
             TODO              read/write images from/to sd-card
             -----------------------------------------------------------------------------------------------
+            -- BRANCH dev-deepsleep --
             2018-11-22 Kaef   added (debug-flags) with flags:
                                 0x0001: DEBUG_SLEEP
                                 0x0002: DEBUG_SDCARD
@@ -59,6 +56,8 @@
             2018-10-19 Kaef   print uLisp start message at begin of setup()
                               added message to show uLisp's enabled features
                               added initworkspace debug messages
+            -- END of BRANCH dev-deepsleep --
+            
             2018-10-16 Kaef   added sleep                                            Kaef deepsleep
                               TODO: make sleep as before, add deepsleep function
             2018-10-16 Kaef   added reset-reason                                     Kaef reset_reason
@@ -1623,14 +1622,14 @@ object *sp_withi2c (object *args, object *env) {
     return result;
 }
 
-void mySPIbegin () {
+void mySPIbegin (int sdcardSSPin) {
     // Kaef sdcard
     //SPI.begin(18, 19, 23, SDCARD_SS_PIN); // sck, miso, mosi, ss // Kaef, my (aka standard arduino) sd-card connections
     //SPI.begin(14, 2, 15, SDCARD_SS_PIN); // sck, miso, mosi, ss  // Kaef, David's ds-card connections
-#if ((defined SDCARD_CLK_IO) && (defined SDCARD_MISO_IO) && (defined SDCARD_MOSI_IO) && (defined SDCARD_SS_PIN))
-    SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, SDCARD_SS_PIN);
+#if ((defined SDCARD_CLK_IO) && (defined SDCARD_MISO_IO) && (defined SDCARD_MOSI_IO))
+    SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, sdcardSSPin);
 #else
-    SPI.begin();
+    SPI.begin(sdcardSSPin);
     pfstring(PSTR("*** WARNING SPI: not all gpios defined, using arduino standard SPI GPIOs! ***"), pserial);
     pln(pserial);
 #endif
@@ -1643,7 +1642,7 @@ object *sp_withspi (object *args, object *env) {
     int divider = 0, mode = 0, bitorder = 1;
     object *pair = cons(var, stream(SPISTREAM, pin));
     push(pair, env);
-    mySPIbegin();
+    mySPIbegin(pin);
     params = cddr(params);
     if (params != NULL) {
         int d = integer(eval(first(params), env));
@@ -1658,14 +1657,14 @@ object *sp_withspi (object *args, object *env) {
             if (params != NULL) mode = integer(eval(first(params), env));
         }
     }
-    pinMode(pin, OUTPUT);
-    digitalWrite(pin, LOW);
+    pinMode(pin, OUTPUT);   // Kaef: should be done by SPI lib (even on ESP32)
+    digitalWrite(pin, LOW); // Kaef: should be done by SPI lib (even on ESP32)
     SPI.setBitOrder((BitOrder)bitorder);
     SPI.setClockDivider(divider);
     SPI.setDataMode(mode);
     object *forms = cdr(args);
     object *result = eval(tf_progn(forms, env), env);
-    digitalWrite(pin, HIGH);
+    digitalWrite(pin, HIGH); // Kaef: should be done by SPI lib (even on ESP32)
     SPI.end();
     return result;
 }
@@ -1677,7 +1676,7 @@ object *sp_withsdcard (object *args, object *env) {
     object *filename = eval(second(params), env);
     params = cddr(params);
     
-    mySPIbegin();
+    mySPIbegin(SDCARD_SS_PIN);
     SD.begin();
     int mode = 0;
     if (params != NULL && first(params) != NULL) mode = integer(first(params));
@@ -4572,7 +4571,7 @@ void listDir(const char * dirname, uint8_t levels) {
 }
 
 void sd_test () {
-    mySPIbegin();
+    mySPIbegin(SDCARD_SS_PIN);
     Serial.print("SDCARD_SS_PIN = "); Serial.println(SDCARD_SS_PIN);
 
     if (!SD.begin(SDCARD_SS_PIN)) {
