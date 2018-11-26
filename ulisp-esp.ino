@@ -13,12 +13,16 @@
       
     Version Date       Author Description                                            Tags in code
     ------------------------------------------------------------------------------------------------------
-    Version 3.4a:
+    Version 2.4a:
             TODO              external wakeup:
                                 esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
                                 esp_deep_sleep_start();
             TODO              read/write images from/to sd-card
             -----------------------------------------------------------------------------------------------
+            2018-11-26 Kaef    merged dev-deepsleep to master, removed branch dev-deepsleep
+                               Increased version info to 2.4b!
+                               Tagged this version with "2.4b"
+                               
             -- BRANCH dev-deepsleep --
             2018-11-22 Kaef   added (debug-flags) with flags:
                                 0x0001: DEBUG_SLEEP
@@ -4635,7 +4639,7 @@ void setup () {
     while (millis() - start < 5000) {
         if (Serial) break;
     }
-    pln(pserial); pfstring(PSTR("uLisp 2.4a -- forked and extended by Kaef (https://github.com/kaef)"), pserial); pln(pserial);
+    pln(pserial); pfstring(PSTR("uLisp 2.4b -- forked and extended by Kaef (https://github.com/kaef)"), pserial); pln(pserial);
     pfstring(PSTR("(c) by David Johnson-Davies - www.technoblogy.com"), pserial); pln(pserial);
     pfstring(PSTR("Licensed under the MIT license: https://opensource.org/licenses/MIT"), pserial); pln(pserial);
     pln(pserial); pfstring(PSTR("System information:"), pserial); pln(pserial);

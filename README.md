@@ -8,6 +8,9 @@ http://www.ulisp.com/show?21T5
 
 This is a fork of ulisp-esp (Version 2.4) where I added some features for esp32.
 
+2018-11-26: merged branch dev-deepsleep to master and removed dev-deepsleep
+       so every deepsleep-addition is in master branch now
+
 ### Brief changelog
 * usage of the 4 MByte PSRAM on ESP-WROVER-32 modules
   (other boards with or without PSRAM (only 4MB supported now, but this is easy to extend) should work too)
@@ -23,7 +26,7 @@ This is a fork of ulisp-esp (Version 2.4) where I added some features for esp32.
     0x0002: DEBUG_SDCARD -- debug information for sdcard (closing before deepsleep)
   tbd.
 
-### Deepsleep functions
+### Deepsleep functions (developed in brach 'dev-deepsleep')
 Because ESP32 has many wakeup possibilities which can be combined I decided to
 add separate functions to activate the wakeup-sources, similar to the
 Espressif idf-framework (not all functions supported).
