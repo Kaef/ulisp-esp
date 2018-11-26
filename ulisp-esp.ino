@@ -2,82 +2,24 @@
     David Johnson-Davies - www.technoblogy.com - 11th October 2018
 
     Licensed under the MIT license: https://opensource.org/licenses/MIT
-*/
-/*
 
-    CHANGELOG
+    forked by Kaef, 2018-10-18
 
-      Warning: this list is only partial updated, see gitlog for detailed informations!
-               (List will be removed soon)
+      * 2018-11-26: Version 2.4b
+      * 2018-11-18: Version 2.4a
 
+      * TODO: add patches from ulisp-2.5
       
-    Version Date       Author Description                                            Tags in code
-    ------------------------------------------------------------------------------------------------------
-    Version 2.4a:
+      * changed standard baud rate to 115200 Bd
+      * added PSRAM support (tested with 4MB PSRAM ESP32-WROVER module)
+      * added lightsleep, deepsleep support
+        (not all possibilities of ESP32 are supported)
             TODO              external wakeup:
                                 esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
-                                esp_deep_sleep_start();
             TODO              read/write images from/to sd-card
-            -----------------------------------------------------------------------------------------------
-            2018-11-26 Kaef    merged dev-deepsleep to master, removed branch dev-deepsleep
-                               Increased version info to 2.4b!
-                               Tagged this version with "2.4b"
-                               
-            -- BRANCH dev-deepsleep --
-            2018-11-22 Kaef   added (debug-flags) with flags:
-                                0x0001: DEBUG_SLEEP
-                                0x0002: DEBUG_SDCARD
-            2018-11-18 Kaef   implemented (enable-gpio-wakeup), (lightsleep-start)
-            2018-11-08 Kaef   implemented (enable-timer-wakup), (deepsleep-start), (isolate-gpio)
-            2018-11-07 Kaef   beginning deep-sleep
-                                an integer or float argument leads to timer-deepsleep
-                                TODO: add external wakeup '('(port logic-function) ['(port logic-function)])
-                              Need to redesign this function:
-                                (1) enable-timer-wakeup(secs)
-                                (2) deepsleep-start()
-                                  (1+2 is the same as sleep(), but time and activation are separated)
-                                (3) isolate-gpio()
-                                (4) enable-ext0-wakeup(port, level)
-                                (5) get-sleep-wakeup-cause()
-                                (6) gpio-wakeup (light sleep only)
-                                    2018-11-18:
-                                    Arduino-esp32-idf does not support this feature.
-                                    Will be implemented when Version > 1.0.0 is released by Espressif.
-                                (6) light-sleep-start()
-                                (*) disable-wakeup-source(source)
-                                (*) enable-uart-wakeup(num_chars)
-                                (*) enable-ext1-wakeup
-                                (-) get-ext1-wakeup-status
-                                (-) enable-touchpad-wakeup
-                                (-) get-touchpad-wakeup-status
-                                (-) sleep-pd-config(...)
-                                --- explanation:
-                                  (N) functions to implement (ordered)
-                                  (*) functions maybe implemented later
-                                  (-) functions not planed to be implemented
-            2018-10-20 Kaef   message to suppress resetautorun-function
-            2018-10-19 Kaef   autorunimage is working, addmissing pinMode() call
-            2018-10-19 Kaef   print uLisp start message at begin of setup()
-                              added message to show uLisp's enabled features
-                              added initworkspace debug messages
-            -- END of BRANCH dev-deepsleep --
-            
-            2018-10-16 Kaef   added sleep                                            Kaef deepsleep
-                              TODO: make sleep as before, add deepsleep function
-            2018-10-16 Kaef   added reset-reason                                     Kaef reset_reason
+      * for more information see README.md and 'git log'
 
-            2018-10-?? Kaef   sdcard pin change support                              Kaef sdcard
-            2018-10-?? Kaef   LARGE_WORKSPACE patch                                  LARGE_WORKSPACE
-                              with large workspaces ulisp get slow, patched:
-                                newsymbol
-                                eval
-                                compactimage
-            2018-10-?? Kaef   make psram useable for workspace                       Kaef PSRAM
-            2018-10-?? Kaef   lisplibrary patch (#ifdef added)                       Kaef LispLibrary
-            2018-10-?? Kaef   added some Debug messages on ulisp start
-            2018-10-?? Kaef   changed serial-baud to 115200
-                              (just my preferred baud rate, not a problem)
-            2018-10-?? Kaef   change ulisp version to "2.4a (forked)"
+    Kaef, 2018-11-26
 */
 // Compile options
 
