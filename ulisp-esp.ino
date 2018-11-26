@@ -28,7 +28,7 @@
 #define serialmonitor
 //#define printgcs
 #define sdcardsupport /* not working for ESP8266! */
-//#define lisplibrary
+#define lisplibrary
 
 #ifdef sdcardsupport
 //#define SD_CARD_DEBUG
@@ -266,7 +266,7 @@ void initworkspace () {
         pint(WORKSPACESIZE, pserial); pfstring(PSTR("("), pserial);
         pint(PSRAMWORKSPACESIZE / 1024, pserial); pfstring(PSTR("k - "), pserial);
         pint(PSRAMWORKSPACESIZE - WORKSPACESIZE, pserial);
-        pfstring(PSTR(") cons allocated. "), pserial);
+        pfstring(PSTR(") Workspace cells allocated. "), pserial);
     } else {
         Workspace = (object*)calloc(WORKSPACESIZE, sizeof(object));
         pfstring(PSTR("done"), pserial);
