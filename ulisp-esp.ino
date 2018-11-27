@@ -172,6 +172,9 @@ typedef void (*pfun_t)(char);
 #define EEPROMSIZE 4096                 /* Bytes available for EEPROM */
 #define SYMBOLTABLESIZE 512             /* Bytes */
 #define SDCARD_SS_PIN 10
+#define SDCARD_CLK_IO    14 /* Arduino standard: 14 */
+#define SDCARD_MISO_IO   12 /* Arduino standard: 12 */
+#define SDCARD_MOSI_IO   13 /* Arduino standard: 13 */
 uint8_t _end;
 typedef int BitOrder;
 
@@ -183,19 +186,14 @@ unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PS
 #define EEPROMSIZE 8192                         /* Bytes available for EEPROM */
 #define SYMBOLTABLESIZE 512                     /* Bytes */
 #define analogWrite(x,y) dacWrite((x),(y))
-#ifdef sdcardsupport
+
 // the names are a bit misleading: here, the gpio-nums has to be configured, not the pin nums!
 #define SDCARD_SS_PIN     5 /* Kaef            :  5, WEMOS ESP32 WOVER: 13 */
 #define SDCARD_CLK_IO    18 /* Arduino standard: 18, WEMOS ESP32 WOVER: 14 */
 #define SDCARD_MISO_IO   19 /* Arduino standard: 19, WEMOS ESP32 WOVER:  2 */
 #define SDCARD_MOSI_IO   23 /* Arduino standard: 23, WEMOS ESP32 WOVER: 15 */
-#endif
 
 bool sleepModeConfigured = false;
-
-#define DEBUG_SLEEP  ((unsigned int) 0x0001)
-#define DEBUG_SDCARD ((unsigned int) 0x0002)
-unsigned int debugFlags = 0;
 
 uint8_t _end;
 typedef int BitOrder;
@@ -210,6 +208,10 @@ object *Workspace;
 #error "Platform not supported!"
 #endif
 /* Kaef PSRAM END */
+
+#define DEBUG_SLEEP  ((unsigned int) 0x0001)
+#define DEBUG_SDCARD ((unsigned int) 0x0002)
+unsigned int debugFlags = 0;
 
 char SymbolTable[SYMBOLTABLESIZE];
 
@@ -1232,6 +1234,7 @@ void nonote (int pin) {
 void initsleep () { }
 
 void isolatePins () {
+#ifdef ESP32
     // Isolate GPIO pins from external circuits. This is needed for modules
     // which have an external pull-up resistor on GPIOs (such as ESP32-WROVER on GPIO12)
     // to minimize current consumption.
@@ -1241,11 +1244,16 @@ void isolatePins () {
     rtc_gpio_isolate(GPIO_NUM_5);
     rtc_gpio_isolate(GPIO_NUM_12);
     rtc_gpio_isolate(GPIO_NUM_15);
+#endif
 }
 
 void prepareSleepTimer (float secs, bool isolate) {
+#ifdef ESP32
     if (isolate) isolatePins();
     esp_sleep_enable_timer_wakeup((int)(secs * 1E6));
+#else
+#warning "Platform not supported!"
+#endif
 }
 
 void shutdownSDCard() {
@@ -1573,9 +1581,25 @@ void mySPIbegin (int sdcardSSPin) {
     //SPI.begin(18, 19, 23, SDCARD_SS_PIN); // sck, miso, mosi, ss // Kaef, my (aka standard arduino) sd-card connections
     //SPI.begin(14, 2, 15, SDCARD_SS_PIN); // sck, miso, mosi, ss  // Kaef, David's ds-card connections
 #if ((defined SDCARD_CLK_IO) && (defined SDCARD_MISO_IO) && (defined SDCARD_MOSI_IO))
+#if (defined ESP32)
     SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, sdcardSSPin);
+#elif (defined ESP8266)
+    SPI.begin();
+    SPI.pins(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, sdcardSSPin);
 #else
+#error "Platform not supported"
+#endif
+#else
+#if (defined ESP32)
     SPI.begin(sdcardSSPin);
+#elif (defined ESP8266)
+    SPI.begin();
+    pfstring(PSTR("*** WARNING: using standard SPI pins and standard SPI-SS pin! Need to define SDCARD_PINS. ***"), pserial);
+    pln(pserial);
+#else
+#error "Platform not supported"
+#endif
+
     pfstring(PSTR("*** WARNING SPI: not all gpios defined, using arduino standard SPI GPIOs! ***"), pserial);
     pln(pserial);
 #endif
