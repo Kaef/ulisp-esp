@@ -14,9 +14,9 @@ http://www.ulisp.com/show?21T5
 
 ### Changelog ulisp-2.4-esp
 * 2018-12-03: latest ulisp-2.4 version (ea23ecc3e795f2b0de135c5cc10c3849f755eeb0)
-** next commit will include changes made by David in ulisp-2.5-esp version
+  next commit will include changes made by David in ulisp-2.5-esp version
 * 2018-11-26: merged branch dev-deepsleep to master
-** removed dev-deepsleep so every deepsleep-addition is in master branch now
+  removed dev-deepsleep so every deepsleep-addition is in master branch now
 * usage of the 4 MByte PSRAM on ESP-WROVER-32 modules
   (other boards with or without PSRAM (only 4MB supported now, but this is easy to extend) should work too)
 * sd-card support: possibility to define sd-card pins (SPI pins used for sd-card)
