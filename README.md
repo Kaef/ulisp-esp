@@ -6,7 +6,7 @@ http://www.ulisp.com/show?21T5
 
 ## Kaef, 2018-10-18:
 
-This is a fork of ulisp-esp (Version 2.4) where I added some features for esp32.
+This is a fork of ulisp-esp (version 2.4, updated to version 2.5) where I added some features for esp32.
 
 ### Changelog ulisp-2.5-esp
 * merged changes manually from technoblogy:master repository
