@@ -8,7 +8,10 @@ http://www.ulisp.com/show?21T5
 
 This is a fork of ulisp-esp (Version 2.4) where I added some features for esp32.
 
-2018-11-26: merged branch dev-deepsleep to master and removed dev-deepsleep
+### 2018-12-03: latest ulisp-2.4 version (ea23ecc3e795f2b0de135c5cc10c3849f755eeb0)
+       next commit will include changes made by David in ulisp-2.5-esp version
+       
+### 2018-11-26: merged branch dev-deepsleep to master and removed dev-deepsleep
        so every deepsleep-addition is in master branch now
 
 ### Brief changelog
