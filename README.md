@@ -29,7 +29,7 @@ http://www.ulisp.com/show?21T5
     0x0002: DEBUG_SDCARD -- debug information for sdcard (closing before deepsleep)
   tbd.
 
-### Deepsleep functions (developed in brach 'dev-deepsleep')
+### Deepsleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
 Because ESP32 has many wakeup possibilities which can be combined I decided to
 add separate functions to activate the wakeup-sources, similar to the
 Espressif idf-framework (not all functions supported).
