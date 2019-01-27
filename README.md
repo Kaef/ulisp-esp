@@ -7,6 +7,10 @@ http://www.ulisp.com/show?21T5
 ## General remarks and changelog:
 * 2018-10-18: This is a fork of ulisp-esp (version 2.4) where I added some features for esp32.
 * 2018-12-03: added changes made in ulisp-2.5-esp (technoblogy:master)
+* 2019-01-27:
+** moved ulisp-esp V. 2.5 to subdirectory ulisp-2.5-esp, renamed ulisp-esp.ino to ulisp-2.5-esp.ino
+   adding new ulisp-features done by David becomes a heavy task I decided to work another way: I'll use David's 'official' ulisp version and redo my esp32 patches (PSRAM support, esp32-deepsleep, sdcard-pin-configuration)
+** this version of ulisp only supports esp32 boards, esp8266 is not tested
 
 ### Changelog ulisp-2.5-esp
 * merged changes manually from technoblogy:master repository
@@ -19,7 +23,6 @@ http://www.ulisp.com/show?21T5
   (other boards with or without PSRAM (only 4MB supported now, but this is easy to extend) should work too)
 * sd-card support: possibility to define sd-card pins (SPI pins used for sd-card)
 * new lisp function: reset-reason
-* sleep uses esp32 deepsleep
 * Deepsleep functions (see below)
 * (sleep) uses lightsleep, therefore program will continue after sleep (this is the expected behaviour for sleep;
   restarting the system (as deepsleep does) is very unusual).
