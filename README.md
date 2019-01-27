@@ -5,10 +5,9 @@ http://www.ulisp.com/show?21T5
 
 
 ## General remarks and changelog:
-* 2019-01-27:
-** moved ulisp-esp V. 2.5 to subdirectory ulisp-2.5-esp, renamed ulisp-esp.ino to ulisp-2.5-esp.ino
-   adding new ulisp-features done by David becomes a heavy task I decided to work another way: I'll use David's 'official' ulisp version and redo my esp32 patches (PSRAM support, esp32-deepsleep, sdcard-pin-configuration)
-** this version of ulisp only supports esp32 boards, esp8266 is not tested
+* 2019-01-27:moved ulisp-esp V. 2.5 to subdirectory ulisp-2.5-esp, renamed ulisp-esp.ino to ulisp-2.5-esp.ino
+* 2019-01-27: adding new ulisp-features done by David becomes a heavy task I decided to work another way: I'll use David's 'official' ulisp version and redo my esp32 patches (PSRAM support, esp32-deepsleep, sdcard-pin-configuration)
+* 2019-01-27: this version of ulisp only supports esp32 boards, esp8266 is not tested
 * 2018-12-03: added changes made in ulisp-2.5-esp (technoblogy:master)
 * 2018-10-18: This is a fork of ulisp-esp (currently version 2.4, will be updated) where I added some features for esp32.
 
