@@ -32,9 +32,9 @@
 
 #ifdef sdcardsupport
 //#define SD_CARD_DEBUG
+#endif
 #ifndef ESP32
 #error "sdcardsupport not available for this platform"
-#endif
 #endif
 
 // Includes
@@ -209,9 +209,11 @@ object *Workspace;
 #endif
 /* Kaef PSRAM END */
 
+// Kaef BEG Block
 #define DEBUG_SLEEP  ((unsigned int) 0x0001)
 #define DEBUG_SDCARD ((unsigned int) 0x0002)
 unsigned int debugFlags = 0;
+// Kaef END Block
 
 char SymbolTable[SYMBOLTABLESIZE];
 
@@ -251,7 +253,6 @@ int builtin (char* n);
 // Set up workspace
 
 void initworkspace () {
-    /* Kaef PSRAM START*/
 #if defined ESP32
     pfstring(PSTR("  initworkspace "), pserial);
     if (psramFound()) {
@@ -280,7 +281,7 @@ void initworkspace () {
     memset(Workspace, 0, sizeof(*Workspace));
     pfl(pserial);
 #endif
-    /* Kaef PSRAM END */
+// Kaef PSRAM END
 
     Freelist = NULL;
     for (int i = WORKSPACESIZE - 1; i >= 0; i--) {
@@ -1576,9 +1577,6 @@ object *sp_withi2c (object *args, object *env) {
 }
 
 void mySPIbegin (int sdcardSSPin) {
-    // Kaef sdcard
-    //SPI.begin(18, 19, 23, SDCARD_SS_PIN); // sck, miso, mosi, ss // Kaef, my (aka standard arduino) sd-card connections
-    //SPI.begin(14, 2, 15, SDCARD_SS_PIN); // sck, miso, mosi, ss  // Kaef, David's ds-card connections
 #if ((defined SDCARD_CLK_IO) && (defined SDCARD_MISO_IO) && (defined SDCARD_MOSI_IO))
 #if (defined ESP32)
     SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, sdcardSSPin);
@@ -1645,7 +1643,7 @@ object *sp_withsdcard (object *args, object *env) {
     object *filename = eval(second(params), env);
     params = cddr(params);
     
-    mySPIbegin(SDCARD_SS_PIN);
+    mySPIbegin(SDCARD_SS_PIN); // Kaef
     SD.begin();
     int mode = 0;
     if (params != NULL && first(params) != NULL) mode = integer(first(params));
@@ -3316,6 +3314,7 @@ object *fn_wificonnect (object *args, object *env) {
 }
 
 // Insert your own function definitions here
+// Kaef: BEG (large) Block
 // BEG (Kaef reset_reason)
 object *fn_resetreason (object *args, object *env) {
     (void) args, (void) env;
@@ -3534,6 +3533,7 @@ object *fn_debugFlags (object *args, object *env) {
     pfl(pserial);
     return cons(number(debugFlags), NULL);
 }
+// Kaef: END (large) Block
 
 // Built-in procedure names - stored in PROGMEM
 
@@ -4509,6 +4509,7 @@ object *read (gfun_t gfun) {
     return item;
 }
 
+// Kaef: BEG Block
 #if (defined SD_CARD_DEBUG) && (defined ESP32) /* Kaef */
 void listDir(const char * dirname, uint8_t levels) {
     Serial.printf("Listing directory: %s\n", dirname);
@@ -4594,6 +4595,8 @@ void printFreeHeap () {
 #endif
     pln(pserial);
 }
+// Kaef: END Block
+
 // Setup
 
 void initenv () {
