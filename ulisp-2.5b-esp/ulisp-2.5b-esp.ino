@@ -177,9 +177,9 @@ unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PS
 #define SDCARD_CLK_IO    18 /* Arduino standard: 18, WEMOS ESP32 WOVER: 14 */
 #define SDCARD_MISO_IO   19 /* Arduino standard: 19, WEMOS ESP32 WOVER:  2 */
 #define SDCARD_MOSI_IO   23 /* Arduino standard: 23, WEMOS ESP32 WOVER: 15 */
-// I2C Pins ('-1' to use default pins):
-const gpio_num_t I2C_SCL = GPIO_NUM_21; // 21 = WROVER PIN 36
-const gpio_num_t I2C_SDA = GPIO_NUM_22; // 22 = WROVER PIN 33
+// I2C Pins ('(gpio_num_t)-1' to use default pins):
+const gpio_num_t I2C_SCL = (gpio_num_t)-1; //GPIO_NUM_22; // 22 = WROVER PIN 33 (esp32 wrover default gpio)
+const gpio_num_t I2C_SDA = (gpio_num_t)-1; //GPIO_NUM_21; // 21 = WROVER PIN 36 (esp32 wrover default gpio)
 
 bool sleepModeConfigured = false;
 
