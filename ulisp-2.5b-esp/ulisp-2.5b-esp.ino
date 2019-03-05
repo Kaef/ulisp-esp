@@ -173,10 +173,19 @@ unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PS
 #define analogWrite(x,y) dacWrite((x),(y))
 
 // the names are a bit misleading: here, the gpio-nums has to be configured, not the pin nums!
-#define SDCARD_SS_PIN     5 /* Kaef            :  5, WEMOS ESP32 WOVER: 13 */
-#define SDCARD_CLK_IO    18 /* Arduino standard: 18, WEMOS ESP32 WOVER: 14 */
-#define SDCARD_MISO_IO   19 /* Arduino standard: 19, WEMOS ESP32 WOVER:  2 */
-#define SDCARD_MOSI_IO   23 /* Arduino standard: 23, WEMOS ESP32 WOVER: 15 */
+/* */
+#define SDCARD_CLK_IO    18 // Arduino standard: 18, WEMOS ESP32 WOVER: 14
+#define SDCARD_MISO_IO   19 // Arduino standard: 19, WEMOS ESP32 WOVER:  2
+#define SDCARD_MOSI_IO   23 // Arduino standard: 23, WEMOS ESP32 WOVER: 15
+#define SDCARD_SS_PIN     5 // Kaef            :  5, WEMOS ESP32 WOVER: 13
+// */
+/* *
+#define SDCARD_CLK_IO   14  // ESP32-WROVER-KIT V4.1
+#define SDCARD_MISO_IO   2  // ESP32-WROVER-KIT V4.1
+#define SDCARD_MOSI_IO  15  // ESP32-WROVER-KIT V4.1
+#define sdcardSSPin     13  // ESP32-WROVER-KIT V4.1
+// */
+
 // I2C Pins ('(gpio_num_t)-1' to use default pins):
 const gpio_num_t I2C_SCL = (gpio_num_t)-1; //GPIO_NUM_22; // 22 = WROVER PIN 33 (esp32 wrover default gpio)
 const gpio_num_t I2C_SDA = (gpio_num_t)-1; //GPIO_NUM_21; // 21 = WROVER PIN 36 (esp32 wrover default gpio)
