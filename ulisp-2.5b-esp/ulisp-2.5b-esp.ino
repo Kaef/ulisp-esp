@@ -5,23 +5,32 @@
 
     patched by Kaef (esp32 PSRAM support, esp32 [light | deep]sleep support, sd-pin interface)
     27th January 2019
+
+    ESP-WROVER-KIT support (TFT, SD-Card) - 16th March 2019
 */
 
 // Compile options
 
 // #define resetautorun
 #define printfreespace
+//#define printfreesymbolspace
 #define serialmonitor
 // #define printgcs
 #define sdcardsupport
 // #define lisplibrary
 
 // Kaef: BEG BLOCK
+#ifndef ESP32
+#error "this version of ulisp supports esp32 only!"
+#endif
+
 #ifdef sdcardsupport
 #define SD_CARD_DEBUG
 #endif
-#ifndef ESP32
-#error "this version of ulisp supports esp32 only!"
+
+#define ESP_WROVER_KIT
+#ifdef ESP_WROVER_KIT
+#include "esp-wrover-kit--scrolltest-simple.h"
 #endif
 // Kaef: END BLOCK
 
@@ -112,7 +121,7 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, REQUIRE, LISTLIBRARY,
                 // Kaef: BEG Block
                 RESETREASON, ENABLETIMERWAKEUP, DEEPSLEEPSTART, ISOLATEGPIO, ENABLEEXT0WAKEUP, GETSLEEPWAKEUPCAUSE,
-                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS,
+                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR,
                 // Kaef: END Block
                 ENDFUNCTIONS
               };
@@ -169,26 +178,25 @@ typedef int BitOrder;
 const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024) / 8; /* Kaef PSRAM */
 unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PSRAM */
 #define EEPROMSIZE 8192                         /* Bytes available for EEPROM */
-#define SYMBOLTABLESIZE 512                     /* Bytes */
+#define SYMBOLTABLESIZE 32*1024 //512                     /* Bytes */
 #define analogWrite(x,y) dacWrite((x),(y))
 
 // the names are a bit misleading: here, the gpio-nums has to be configured, not the pin nums!
-/* */
+#ifdef ESP_WROVER_KIT
+#define SDCARD_CLK_IO    14 // ESP32-WROVER-KIT V4.1
+#define SDCARD_MISO_IO    2 // ESP32-WROVER-KIT V4.1
+#define SDCARD_MOSI_IO   15 // ESP32-WROVER-KIT V4.1
+#define SDCARD_SS_PIN    13 // ESP32-WROVER-KIT V4.1
+#else
 #define SDCARD_CLK_IO    18 // Arduino standard: 18, WEMOS ESP32 WOVER: 14
 #define SDCARD_MISO_IO   19 // Arduino standard: 19, WEMOS ESP32 WOVER:  2
 #define SDCARD_MOSI_IO   23 // Arduino standard: 23, WEMOS ESP32 WOVER: 15
 #define SDCARD_SS_PIN     5 // Kaef            :  5, WEMOS ESP32 WOVER: 13
-// */
-/* *
-#define SDCARD_CLK_IO   14  // ESP32-WROVER-KIT V4.1
-#define SDCARD_MISO_IO   2  // ESP32-WROVER-KIT V4.1
-#define SDCARD_MOSI_IO  15  // ESP32-WROVER-KIT V4.1
-#define sdcardSSPin     13  // ESP32-WROVER-KIT V4.1
-// */
+#endif
 
 // I2C Pins ('(gpio_num_t)-1' to use default pins):
-const gpio_num_t I2C_SCL = (gpio_num_t)-1; //GPIO_NUM_22; // 22 = WROVER PIN 33 (esp32 wrover default gpio)
-const gpio_num_t I2C_SDA = (gpio_num_t)-1; //GPIO_NUM_21; // 21 = WROVER PIN 36 (esp32 wrover default gpio)
+const gpio_num_t I2C_SCL = (gpio_num_t) - 1; //GPIO_NUM_22; // 22 = WROVER PIN 33 (esp32 wrover default gpio)
+const gpio_num_t I2C_SDA = (gpio_num_t) - 1; //GPIO_NUM_21; // 21 = WROVER PIN 36 (esp32 wrover default gpio)
 
 bool sleepModeConfigured = false;
 
@@ -254,21 +262,21 @@ int builtin (char* n);
 // Kaef PSRAM START
 void setupWorkspace () {
 #if defined ESP32
-    pfstring(PSTR("  initworkspace "), pserial);
+    pfstring(PSTR("  initworkspace: "), pserial);
     if (psramFound()) {
-        pfstring(PSTR("PSRAM "), pserial);
+        pfstring(PSTR("PSRAM, "), pserial);
         WORKSPACESIZE = PSRAMWORKSPACESIZE;
-        // Kaef: a few bytes (~ 51) of PSRAM is used by espressif
+        // Kaef: a few bytes (~ 51) of PSRAM is used by the system
         //       because I didn't found a description for this, so I iterativly try to allocate memory
         Workspace = NULL;
         while ((Workspace == NULL) && (WORKSPACESIZE > 0)) {
             WORKSPACESIZE--;
             Workspace = (object*)ps_calloc(WORKSPACESIZE, sizeof(object));
         }
-        pint(WORKSPACESIZE, pserial); pfstring(PSTR("("), pserial);
+        //pint(WORKSPACESIZE, pserial); pln(pserial);
         pint(PSRAMWORKSPACESIZE / 1024, pserial); pfstring(PSTR("k - "), pserial);
-        pint(PSRAMWORKSPACESIZE - WORKSPACESIZE, pserial);
-        pfstring(PSTR(") Workspace cells allocated. "), pserial);
+        pint(PSRAMWORKSPACESIZE - WORKSPACESIZE, pserial); pfstring(PSTR(" cons"), pserial); pln(pserial);
+        //pfstring(PSTR(") Workspace cells allocated. "), pserial);
     } else {
         Workspace = (object*)calloc(WORKSPACESIZE, sizeof(object));
         pfstring(PSTR("done"), pserial);
@@ -279,7 +287,7 @@ void setupWorkspace () {
             delay(1000);
     }
     memset(Workspace, 0, sizeof(*Workspace));
-    pfl(pserial);
+    pln(pserial);
 #endif
 }
 // Kaef PSRAM END
@@ -1731,7 +1739,7 @@ object *sp_withsdcard (object * args, object * env) {
         if (!SDpfile) error(PSTR("Problem writing to SD card"));
     } else {
         SDgfile = SD.open(MakeFilename(filename), oflag);
-        if (!SDgfile) error(PSTR("Problem reading from SD card"));
+        if (!SDgfile) error(PSTR("Problem reading from SD card (no card or file not found)"));
     }
     object *pair = cons(var, stream(SDSTREAM, 1));
     push(pair, env);
@@ -3643,6 +3651,17 @@ object *fn_debugFlags (object * args, object * env) {
     pfl(pserial);
     return cons(number(debugFlags), NULL);
 }
+
+object *fn_listDir (object * args, object * env) {
+    (void) args; (void) env;
+    #ifdef sdcardsupport
+    listDir("/", 0);
+    #else
+    error(PSTR("sdcardsupport not enabled"));
+    #endif
+    return nil;
+}
+
 // Kaef: END (large) Block
 
 // Built-in procedure names - stored in PROGMEM
@@ -3840,6 +3859,7 @@ const char string188[] PROGMEM = "get-sleep-wakeup-cause";
 const char string189[] PROGMEM = "enable-gpio-wakeup";
 const char string190[] PROGMEM = "lightsleep-start";
 const char string191[] PROGMEM = "debug-flags";
+const char string192[] PROGMEM = "ls";
 // Kaef: END Block
 
 const tbl_entry_t lookup_table[] PROGMEM = {
@@ -4036,6 +4056,7 @@ const tbl_entry_t lookup_table[] PROGMEM = {
     { string189, fn_enableGpioWakeup, 2, 2},
     { string190, fn_lightsleepstart, 0, 0},
     { string191, fn_debugFlags, 0, 1},
+    { string192, fn_listDir, 0, 0},
     // Kaef: END Block
 };
 
@@ -4064,7 +4085,9 @@ int longsymbol (char *buffer) {
         if (SYMBOLTABLESIZE - (newtop - SymbolTable) < BUFFERSIZE) error(PSTR("No room for long symbols"));
         SymbolTop = newtop;
     }
-    if (i > 1535) error(PSTR("Too many long symbols"));
+    // Kaef: next line shouldn't be needed? (32-bit platform!)
+#warning "Kaef: could we allow more than 1535 long symbols? => I think it should work!"
+    //if (i > 1535) error(PSTR("Too many long symbols"));
     return i + 64000; // First number unused by radix40
 }
 
@@ -4268,6 +4291,9 @@ inline int maxbuffer (char *buffer) {
 
 void pserial (char c) {
     LastPrint = c;
+#ifdef ESP_WROVER_KIT
+    displayPrintChar(c);
+#endif
     if (c == '\n') Serial.write('\r');
     Serial.write(c);
 }
@@ -4626,82 +4652,99 @@ object *read (gfun_t gfun) {
 }
 
 // Kaef: BEG Block
-#if (defined SD_CARD_DEBUG) && (defined ESP32) /* Kaef */
-void listDir(const char * dirname, uint8_t levels) {
-    Serial.printf("Listing directory: %s\n", dirname);
+void identDirListing(uint8_t curDirLevel) {
+    for (int i = 0; i < curDirLevel; i++)
+        pfstring(PSTR("  "), pserial);
+}
+
+#if (defined sdcardsupport)
+void listDir (const char * dirname, uint8_t curDirLevel) {
+    const uint8_t MAX_DIR_LEVELS = 10;
+    identDirListing(curDirLevel);
+    pfstring(PSTR("  Listing directory: "), pserial); pfstring(dirname, pserial); pln(pserial);
 
     File root = SD.open(dirname);
     if (!root) {
-        Serial.println("Failed to open directory");
+        pfstring(PSTR("Failed to open directory"), pserial); pln(pserial);
         return;
     }
     if (!root.isDirectory()) {
-        Serial.println("Not a directory");
+        pfstring(PSTR("Not a directory"), pserial); pln(pserial);
         return;
     }
 
     File file = root.openNextFile();
     while (file) {
+        identDirListing(curDirLevel);
         if (file.isDirectory()) {
-            Serial.print("  DIR : ");
-            Serial.println(file.name());
-            if (levels) {
-                listDir(file.name(), levels - 1);
+            pfstring(PSTR("    DIR:  "), pserial);
+            pfstring(file.name(), pserial); pln(pserial);
+            if (curDirLevel < MAX_DIR_LEVELS) {
+                listDir(file.name(), curDirLevel + 1);
+            } else {
+                pfstring(PSTR("      no more levels shown..."), pserial);
+                pln(pserial);
             }
         } else {
-            Serial.print("  FILE: ");
-            Serial.print(file.name());
-            Serial.print("  SIZE: ");
-            Serial.println(file.size());
+            pfstring(PSTR("    FILE: "), pserial);
+            pfstring(file.name(), pserial);
+            pfstring(PSTR(" #"), pserial);
+            pint(file.size(), pserial); pln(pserial);
         }
         file = root.openNextFile();
     }
-    Serial.println("done");
+    identDirListing(curDirLevel);
+    pfstring(PSTR("  done"), pserial); pln(pserial);
 }
+#endif
 
+#if (defined SD_CARD_DEBUG) && (defined ESP32) /* Kaef */
 void sd_test () {
     mySPIbegin(SDCARD_SS_PIN);
-    Serial.print("SDCARD_SS_PIN = "); Serial.println(SDCARD_SS_PIN);
+    //pfstring(PSTR("  SDCARD_SS_PIN: "), pserial); pint(SDCARD_SS_PIN, pserial);
 
     if (!SD.begin(SDCARD_SS_PIN)) {
-        Serial.println("Card Mount Failed!");
+        pfstring(PSTR("    ** Card Mount Failed! **"), pserial);
         return;
     }
-    uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-    Serial.printf("SD Card Size: %lluMB\n", cardSize);
+    uint32_t cardSize = SD.cardSize() / (1024 * 1024);
+    pfstring(PSTR("  SD Card Size: "), pserial);
+    pint(cardSize, pserial); pfstring(PSTR("MB"), pserial); pln(pserial);
 
-    listDir("/", 5);
+    listDir("/", 0);
 }
 #endif
 
 // Kaef:
 void printEnabledFeatures () {
-    pln(pserial); pfstring(PSTR("  Features:"), pserial);
+    pln(pserial); pfstring(PSTR("    Features:"), pserial); pln(pserial);
 #if (defined resetautorun)
-    pfstring(PSTR(" resetautorun"), pserial);
+    pfstring(PSTR("      resetautorun"), pserial); pln(pserial);
 #endif
 #if (defined printfreespace)
-    pfstring(PSTR(" printfreespace"), pserial);
+    pfstring(PSTR("      printfreespace"), pserial); pln(pserial);
+#endif
+#if (defined printfreesymbolspace)
+    pfstring(PSTR("      printfreesymbolspace"), pserial); pln(pserial);
 #endif
 #if (defined serialmonitor)
-    pfstring(PSTR(" serialmonitor"), pserial);
+    pfstring(PSTR("      serialmonitor"), pserial); pln(pserial);
 #endif
 #if (defined printgcs)
-    pfstring(PSTR(" printgcs"), pserial);
+    pfstring(PSTR("      printgcs"), pserial); pln(pserial);
 #endif
 #if (defined sdcardsupport)
-    pfstring(PSTR(" sdcardsupport"), pserial);
+    pfstring(PSTR("      sdcardsupport"), pserial); pln(pserial);
 #endif
 #if (defined SD_CARD_DEBUG)
-    pfstring(PSTR(" SD_CARD_DEBUG"), pserial);
+    pfstring(PSTR("      SD_CARD_DEBUG"), pserial); pln(pserial);
 #endif
 #if (defined lisplibrary)
-    pfstring(PSTR(" lisplibrary"), pserial);
+    pfstring(PSTR("      lisplibrary"), pserial); pln(pserial);
 #endif
 #if defined LARGE_WORKSPACE
-    pfstring(PSTR(" LARGE_WORKSPACE_SETUP"), pserial);
+    pfstring(PSTR("      LARGE_WORKSPACE_SETUP"), pserial); pln(pserial);
 #endif
-    pln(pserial);
 }
 
 
@@ -4713,24 +4756,31 @@ void printFreeHeap () {
 }
 
 void welcomeMessage () {
-    pln(pserial); pfstring(PSTR("uLisp 2.5b -- forked and extended by Kaef (https://github.com/kaef)"), pserial); pln(pserial);
-    pfstring(PSTR("(c) by David Johnson-Davies - www.technoblogy.com"), pserial); pln(pserial);
-    pfstring(PSTR("Licensed under the MIT license: https://opensource.org/licenses/MIT"), pserial); pln(pserial);
-    pln(pserial); pfstring(PSTR("System information:"), pserial); pln(pserial);
+    pln(pserial); pfstring(PSTR("uLisp 2.5b (Kaef)"), pserial); pln(pserial);
+    //pfstring(PSTR("  forked and extended by Kaef (https://github.com/kaef)"), pserial);  pln(pserial);
+    //pfstring(PSTR("(c) by David Johnson-Davies"), pserial); pln(pserial);
+    //pfstring(PSTR("    www.technoblogy.com"), pserial); pln(pserial);
+    //pfstring(PSTR("Licensed under the MIT license:"), pserial); pln(pserial);
+    //pfstring(PSTR("     https://opensource.org/licenses/MIT"), pserial); pln(pserial);
+    pln(pserial); pfstring(PSTR("  System information: "), pserial);
 #ifdef ESP32
-    pfstring(PSTR("  reset reason: "), pserial); pint(rtc_get_reset_reason(0), pserial);
-    pfstring(PSTR("  wakeup cause: "), pserial); pint(esp_sleep_get_wakeup_cause(), pserial); pln(pserial);
+#ifdef ESP_WROVER_KIT
+    pfstring(PSTR("ESP-WROVER-KIT"), pserial);
 #endif
-    pfstring(PSTR("  compiled: "), pserial);
+    pln(pserial);
+    pfstring(PSTR("    reset reason: "), pserial); pint(rtc_get_reset_reason(0), pserial); pln(pserial);
+    pfstring(PSTR("    wakeup cause: "), pserial); pint(esp_sleep_get_wakeup_cause(), pserial);
+#endif
+    pln(pserial);
+    pfstring(PSTR("    compiled: "), pserial);
     pfstring(PSTR(__DATE__), pserial); pfstring(PSTR(" "), pserial);
     pfstring(PSTR(__TIME__), pserial);
     printEnabledFeatures();
-    //printFreeHeap();
     // Kaef: SD Card test
 #if (defined SD_CARD_DEBUG) && (defined ESP32)
     sd_test();
 #endif
-    printFreeHeap();
+    //printFreeHeap();
 
 #ifdef resetautorun
     pln(pserial);
@@ -4738,7 +4788,7 @@ void welcomeMessage () {
     // give user the chance to press Btn0
     while (millis() < 1000) yield();
 #endif
-    pln(pserial);
+    pln(pserial); pln(pserial);
 }
 // Kaef: END Block
 
@@ -4756,6 +4806,9 @@ void setup () {
     while (millis() - start < 5000) {
         if (Serial) break;
     }
+#ifdef ESP_WROVER_KIT
+    setup_tft();
+#endif
     welcomeMessage(); // Kaef
     initworkspace();
     initenv();
@@ -4776,9 +4829,25 @@ void repl (object * env) {
         // gc(NULL, env);
         // Kaef: END Block
 
-#if defined (printfreespace)
-        pint(Freespace, pserial);
+#if (defined printfreespace)
+        if (1) //(Freespace < 100000)
+            pint(Freespace, pserial);
+        else {
+            pint(Freespace / 1024, pserial); pfstring(PSTR("k"), pserial);
+        }
 #endif
+#if (defined printfreespace) && (defined printfreesymbolspace)
+        pfstring(PSTR("|"), pserial);
+#endif
+#if (defined printfreesymbolspace)
+        unsigned int freeSymbolspace = SYMBOLTABLESIZE - (int)(SymbolTop - SymbolTable);
+        if (freeSymbolspace < 10000)
+            pint(freeSymbolspace, pserial);
+        else {
+            pint(freeSymbolspace / 1024, pserial); pfstring(PSTR("k"),  pserial);
+        }
+#endif
+
         if (BreakLevel) {
             pfstring(PSTR(" : "), pserial);
             pint(BreakLevel, pserial);

@@ -53,7 +53,7 @@ const char LispLibrary[] PROGMEM =
 "(defun cat (filename) \
     (with-sd-card (s filename) \
       (loop \
-        (let ((line (read s))) \
+        (let ((line (read-line s))) \
         (if (null line) \
           (return) \
           (print line))))))"

@@ -5,7 +5,14 @@ http://www.ulisp.com/show?21T5
 
 
 ## General remarks and changelog:
-* 2019-01-27:moved ulisp-esp V. 2.5 to subdirectory ulisp-2.5-esp, renamed ulisp-esp.ino to ulisp-2.5-esp.ino
+* 2019-03-16: added support for ESP-WROVER-KIT
+
+  * TFT support through WROVER\_KIT\_LCD library (based on scrolltest example)
+  It's just a proof of concept, I'm not satisfied with the solution because the example seems to be written for writing whole lines of text, not single characters. I even don't understand completely how the example is working. I will investigate after keyboard support is included. Anyway, the display is working... ;-)
+  I had to patch the WROVER\_KIT\_LCD library to make the lcd and the sd card work in parallel. I renamed the library to WROVER\_KIT\_LCD\_KAEF and included it in the uLisp directory. Please copy the lib to your sketchbook/libraries (Arduino/libraries on windows) folder!
+  * SD card support included
+  
+* 2019-01-27: moved ulisp-esp V. 2.5 to subdirectory ulisp-2.5-esp, renamed ulisp-esp.ino to ulisp-2.5-esp.ino
 * 2019-01-27: adding new ulisp-features done by David becomes a heavy task I decided to work another way: I'll use David's 'official' ulisp version and redo my esp32 patches (PSRAM support, esp32-deepsleep, sdcard-pin-configuration)
 * 2019-01-27: this version of ulisp only supports esp32 boards, esp8266 is not tested
 * 2018-12-03: added changes made in ulisp-2.5-esp (technoblogy:master)
