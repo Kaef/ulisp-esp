@@ -9,6 +9,7 @@ http://www.ulisp.com/show?21T5
 
   It seems most things are working smoothly, except <break> didn't work, so you can't stop a running uLisp program.
   It is possible to use the serial connection in parallel with the PS/2 keyboard.
+  US keyboard layout supported.
 
 * 2019-03-17: added WROVER\_KIT\_LCD\_KAEF and PS2Kbd libraries
 * 2019-03-16: added support for ESP-WROVER-KIT
@@ -28,7 +29,7 @@ http://www.ulisp.com/show?21T5
   use a 4k7 resistor from CLK to 5V and from DTA to 5V
   connect CLK to GPIO27
   connect DTA to GPIO26
-  try the simpleRead example from PS2Kbd library (the keyboard should work)
+  try the simpleRead example from PS2Kbd library (the keyboard should work).
 
 * 2019-02: extend SYMBOLTABLESIZE to 32kBytes, extend the number of long symbols (no restrictions), UNTESTED! (wrote a #warning message in the sources)
 
