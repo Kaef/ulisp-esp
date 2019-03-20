@@ -5,13 +5,33 @@ http://www.ulisp.com/show?21T5
 
 
 ## General remarks and changelog:
+* 2019-03-20: PS/2 keyboard support (including parenthesis highlighting)
+
+  It seems most things are working smoothly, except <break> didn't work, so you can't stop a running uLisp program.
+  It is possible to use the serial connection in parallel with the PS/2 keyboard.
+
+* 2019-03-17: added WROVER\_KIT\_LCD\_KAEF and PS2Kbd libraries
 * 2019-03-16: added support for ESP-WROVER-KIT
 
   * TFT support through WROVER\_KIT\_LCD library (based on scrolltest example)
-  It's just a proof of concept, I'm not satisfied with the solution because the example seems to be written for writing whole lines of text, not single characters. I even don't understand completely how the example is working. I will investigate after keyboard support is included. Anyway, the display is working... ;-)
+  It's just a proof of concept, I'm not satisfied with the solution because the example seems to be written for writing whole lines of text, not single characters. I will investigate after keyboard support is included. Anyway, the display is working... ;-)
   I had to patch the WROVER\_KIT\_LCD library to make the lcd and the sd card work in parallel. I renamed the library to WROVER\_KIT\_LCD\_KAEF and included it in the uLisp directory. Please copy the lib to your sketchbook/libraries (Arduino/libraries on windows) folder!
   * SD card support included
-  
+  * Keyboard support with PS2Kbd library from https://github.com/michalhol/ps2kbdlib
+  Most USB-keyboards supports the ps/2 mode (you can buy cheap usb -> ps/2 adapters for that).
+  I connect my USB keyboard to the WROVER\_KIT\_LCD:
+  /---------------\ 
+  |   USB Keyb.   |
+  |___ ___ ___ ___|
+  .GND CLK DTA +5V
+  I cut a usb cable with a USB-A female connector and connect it to the board.
+  use a 4k7 resistor from CLK to 5V and from DTA to 5V
+  connect CLK to GPIO27
+  connect DTA to GPIO26
+  try the simpleRead example from PS2Kbd library (the keyboard should work)
+
+* 2019-02: extend SYMBOLTABLESIZE to 32kBytes, extend the number of long symbols (no restrictions), UNTESTED! (wrote a #warning message in the sources)
+
 * 2019-01-27: moved ulisp-esp V. 2.5 to subdirectory ulisp-2.5-esp, renamed ulisp-esp.ino to ulisp-2.5-esp.ino
 * 2019-01-27: adding new ulisp-features done by David becomes a heavy task I decided to work another way: I'll use David's 'official' ulisp version and redo my esp32 patches (PSRAM support, esp32-deepsleep, sdcard-pin-configuration)
 * 2019-01-27: this version of ulisp only supports esp32 boards, esp8266 is not tested

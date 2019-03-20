@@ -30,8 +30,10 @@
 
 #define ESP_WROVER_KIT
 #ifdef ESP_WROVER_KIT
-#include "esp-wrover-kit--scrolltest-simple.h"
+#include "esp-wrover-kit-display.h"
 #endif
+#define PS2_KEYBOARD
+
 // Kaef: END BLOCK
 
 // Includes
@@ -245,6 +247,12 @@ char PrintReadably = 1;
 // Flags
 enum flag { RETURNFLAG, ESCAPE, EXITEDITOR, LIBRARYLOADED };
 volatile char Flags;
+
+// Kaef: BEG BLOCK
+#ifdef  PS2_KEYBOARD
+#include "ps2keyboard.h"
+#endif
+// Kaef: END BLOCK
 
 // Forward references
 object *tee;
@@ -695,7 +703,7 @@ void error (const char *string) {
     longjmp(exception, 1);
 }
 
-void error2 (object * symbol, const char *string) {
+void error2 (object *symbol, const char *string) {
     pfl(pserial); pfstring(PSTR("Error: "), pserial);
     if (symbol == NULL) pfstring(PSTR("function "), pserial);
     else {
@@ -747,19 +755,19 @@ void untrace (symbol_t name) {
 
 // Helper functions
 
-boolean consp (object * x) {
+boolean consp (object *x) {
     if (x == NULL) return false;
     unsigned int type = x->type;
     return type >= PAIR || type == ZERO;
 }
 
-boolean atom (object * x) {
+boolean atom (object *x) {
     if (x == NULL) return true;
     unsigned int type = x->type;
     return type < PAIR && type != ZERO;
 }
 
-boolean listp (object * x) {
+boolean listp (object *x) {
     if (x == NULL) return true;
     unsigned int type = x->type;
     return type >= PAIR || type == ZERO;
@@ -794,7 +802,7 @@ int digitvalue (char d) {
     return 16;
 }
 
-char *name (object * obj) {
+char *name (object *obj) {
     if (obj->type != SYMBOL) error(PSTR("Error in name"));
     symbol_t x = obj->name;
     if (x < ENDFUNCTIONS) return lookupbuiltin(x);
@@ -808,37 +816,37 @@ char *name (object * obj) {
     return buffer;
 }
 
-int integer (object * obj) {
+int integer (object *obj) {
     if (!integerp(obj)) error2(obj, PSTR("is not an integer"));
     return obj->integer;
 }
 
-float fromfloat (object * obj) {
+float fromfloat (object *obj) {
     if (!floatp(obj)) error2(obj, PSTR("is not a float"));
     return obj->single_float;
 }
 
-float intfloat (object * obj) {
+float intfloat (object *obj) {
     if (integerp(obj)) return obj->integer;
     if (!floatp(obj)) error2(obj, PSTR("is not an integer or float"));
     return obj->single_float;
 }
 
-int fromchar (object * obj) {
+int fromchar (object *obj) {
     if (!characterp(obj)) error2(obj, PSTR("is not a character"));
     return obj->integer;
 }
 
-int istream (object * obj) {
+int istream (object *obj) {
     if (!streamp(obj)) error2(obj, PSTR("is not a stream"));
     return obj->integer;
 }
 
-int issymbol (object * obj, symbol_t n) {
+int issymbol (object *obj, symbol_t n) {
     return symbolp(obj) && obj->name == n;
 }
 
-int eq (object * arg1, object * arg2) {
+int eq (object *arg1, object *arg2) {
     if (arg1 == arg2) return true;  // Same object
     if ((arg1 == nil) || (arg2 == nil)) return false;  // Not both values
     if (arg1->cdr != arg2->cdr) return false;  // Different values
@@ -849,7 +857,7 @@ int eq (object * arg1, object * arg2) {
     return false;
 }
 
-int listlength (object * list) {
+int listlength (object *list) {
     int length = 0;
     while (list != NULL) {
         list = cdr(list);
@@ -860,7 +868,7 @@ int listlength (object * list) {
 
 // Association lists
 
-object *assoc (object * key, object * list) {
+object *assoc (object *key, object *list) {
     while (list != NULL) {
         object *pair = first(list);
         if (eq(key, car(pair))) return pair;
@@ -869,7 +877,7 @@ object *assoc (object * key, object * list) {
     return nil;
 }
 
-object *delassoc (object * key, object **alist) {
+object *delassoc (object *key, object **alist) {
     object *list = *alist;
     object *prev = NULL;
     while (list != NULL) {
@@ -926,7 +934,7 @@ object *readstring (char delim, gfun_t gfun) {
     return obj;
 }
 
-int stringlength (object * form) {
+int stringlength (object *form) {
     int length = 0;
     form = cdr(form);
     while (form != NULL) {
@@ -939,7 +947,7 @@ int stringlength (object * form) {
     return length;
 }
 
-char nthchar (object * string, int n) {
+char nthchar (object *string, int n) {
     object *arg = cdr(string);
     int top;
     if (sizeof(int) == 4) {
@@ -958,12 +966,12 @@ char nthchar (object * string, int n) {
     return (arg->integer) >> (n * 8) & 0xFF;
 }
 
-char *cstringbuf (object * arg) {
+char *cstringbuf (object *arg) {
     cstring(arg, SymbolTop, SYMBOLTABLESIZE - (SymbolTop - SymbolTable));
     return SymbolTop;
 }
 
-char *cstring (object * form, char *buffer, int buflen) {
+char *cstring (object *form, char *buffer, int buflen) {
     int index = 0;
     form = cdr(form);
     while (form != NULL) {
@@ -998,7 +1006,7 @@ object *lispstring (char *s) {
 
 // Lookup variable in environment
 
-object *value (symbol_t n, object * env) {
+object *value (symbol_t n, object *env) {
     while (env != NULL) {
         object *pair = car(env);
         if (pair != NULL && car(pair)->name == n) return pair;
@@ -1007,7 +1015,7 @@ object *value (symbol_t n, object * env) {
     return nil;
 }
 
-object *findvalue (object * var, object * env) {
+object *findvalue (object *var, object *env) {
     symbol_t varname = var->name;
     object *pair = value(varname, env);
     if (pair == NULL) pair = value(varname, GlobalEnv);
@@ -1015,7 +1023,7 @@ object *findvalue (object * var, object * env) {
     return pair;
 }
 
-object *findtwin (object * var, object * env) {
+object *findtwin (object *var, object *env) {
     while (env != NULL) {
         object *pair = car(env);
         if (pair != NULL && car(pair) == var) return pair;
@@ -1026,7 +1034,7 @@ object *findtwin (object * var, object * env) {
 
 // Handling closures
 
-object *closure (int tc, object * fname, object * state, object * function, object * args, object **env) {
+object *closure (int tc, object *fname, object *state, object *function, object *args, object **env) {
     int trace = 0;
     if (fname != NULL) trace = tracing(fname->name);
     if (trace) {
@@ -1074,7 +1082,7 @@ object *closure (int tc, object * fname, object * state, object * function, obje
     return tf_progn(function, *env);
 }
 
-object *apply (object * function, object * args, object **env) {
+object *apply (object *function, object *args, object **env) {
     if (symbolp(function)) {
         symbol_t name = function->name;
         int nargs = listlength(args);
@@ -1099,7 +1107,7 @@ object *apply (object * function, object * args, object **env) {
 
 // In-place operations
 
-object **place (object * args, object * env) {
+object **place (object *args, object *env) {
     if (atom(args)) return &cdr(findvalue(args, env));
     object* function = first(args);
     if (issymbol(function, CAR) || issymbol(function, FIRST)) {
@@ -1129,13 +1137,13 @@ object **place (object * args, object * env) {
 
 // Checked car and cdr
 
-inline object *carx (object * arg) {
+inline object *carx (object *arg) {
     if (!listp(arg)) error(PSTR("Can't take car"));
     if (arg == nil) return nil;
     return car(arg);
 }
 
-inline object *cdrx (object * arg) {
+inline object *cdrx (object *arg) {
     if (!listp(arg)) error(PSTR("Can't take cdr"));
     if (arg == nil) return nil;
     return cdr(arg);
@@ -1224,7 +1232,7 @@ void serialend (int address) {
 #endif
 }
 
-gfun_t gstreamfun (object * args) {
+gfun_t gstreamfun (object *args) {
     int streamtype = SERIALSTREAM;
     int address = 0;
     gfun_t gfun = gserial;
@@ -1258,7 +1266,7 @@ inline void SDwrite (char c) {
 }
 #endif
 
-pfun_t pstreamfun (object * args) {
+pfun_t pstreamfun (object *args) {
     int streamtype = SERIALSTREAM;
     int address = 0;
     pfun_t pfun = pserial;
@@ -1379,12 +1387,12 @@ void sleep (int secs) {
 
 // Special forms
 
-object *sp_quote (object * args, object * env) {
+object *sp_quote (object *args, object *env) {
     (void) env;
     return first(args);
 }
 
-object *sp_defun (object * args, object * env) {
+object *sp_defun (object *args, object *env) {
     (void) env;
     object *var = first(args);
     if (var->type != SYMBOL) error2(var, PSTR("is not a symbol"));
@@ -1398,7 +1406,7 @@ object *sp_defun (object * args, object * env) {
     return var;
 }
 
-object *sp_defvar (object * args, object * env) {
+object *sp_defvar (object *args, object *env) {
     object *var = first(args);
     if (var->type != SYMBOL) error2(var, PSTR("is not a symbol"));
     object *val = NULL;
@@ -1413,14 +1421,14 @@ object *sp_defvar (object * args, object * env) {
     return var;
 }
 
-object *sp_setq (object * args, object * env) {
+object *sp_setq (object *args, object *env) {
     object *arg = eval(second(args), env);
     object *pair = findvalue(first(args), env);
     cdr(pair) = arg;
     return arg;
 }
 
-object *sp_loop (object * args, object * env) {
+object *sp_loop (object *args, object *env) {
     clrflag(RETURNFLAG);
     object *start = args;
     for (;;) {
@@ -1437,14 +1445,14 @@ object *sp_loop (object * args, object * env) {
     }
 }
 
-object *sp_push (object * args, object * env) {
+object *sp_push (object *args, object *env) {
     object *item = eval(first(args), env);
     object **loc = place(second(args), env);
     push(item, *loc);
     return *loc;
 }
 
-object *sp_pop (object * args, object * env) {
+object *sp_pop (object *args, object *env) {
     object **loc = place(first(args), env);
     object *result = car(*loc);
     pop(*loc);
@@ -1453,7 +1461,7 @@ object *sp_pop (object * args, object * env) {
 
 // Special forms incf/decf
 
-object *sp_incf (object * args, object * env) {
+object *sp_incf (object *args, object *env) {
     object **loc = place(first(args), env);
     args = cdr(args);
 
@@ -1486,7 +1494,7 @@ object *sp_incf (object * args, object * env) {
     return *loc;
 }
 
-object *sp_decf (object * args, object * env) {
+object *sp_decf (object *args, object *env) {
     object **loc = place(first(args), env);
     args = cdr(args);
 
@@ -1519,14 +1527,14 @@ object *sp_decf (object * args, object * env) {
     return *loc;
 }
 
-object *sp_setf (object * args, object * env) {
+object *sp_setf (object *args, object *env) {
     object **loc = place(first(args), env);
     object *result = eval(second(args), env);
     *loc = result;
     return result;
 }
 
-object *sp_dolist (object * args, object * env) {
+object *sp_dolist (object *args, object *env) {
     object *params = first(args);
     object *var = first(params);
     object *result;
@@ -1552,7 +1560,7 @@ object *sp_dolist (object * args, object * env) {
     return eval(car(params), env);
 }
 
-object *sp_dotimes (object * args, object * env) {
+object *sp_dotimes (object *args, object *env) {
     object *params = first(args);
     object *var = first(params);
     object *result;
@@ -1576,7 +1584,7 @@ object *sp_dotimes (object * args, object * env) {
     return eval(car(params), env);
 }
 
-object *sp_trace (object * args, object * env) {
+object *sp_trace (object *args, object *env) {
     (void) env;
     while (args != NULL) {
         trace(first(args)->name);
@@ -1590,7 +1598,7 @@ object *sp_trace (object * args, object * env) {
     return args;
 }
 
-object *sp_untrace (object * args, object * env) {
+object *sp_untrace (object *args, object *env) {
     (void) env;
     if (args == NULL) {
         int i = 0;
@@ -1608,7 +1616,7 @@ object *sp_untrace (object * args, object * env) {
     return args;
 }
 
-object *sp_formillis (object * args, object * env) {
+object *sp_formillis (object *args, object *env) {
     object *param = first(args);
     unsigned long start = millis();
     unsigned long now, total = 0;
@@ -1622,7 +1630,7 @@ object *sp_formillis (object * args, object * env) {
     return nil;
 }
 
-object *sp_withserial (object * args, object * env) {
+object *sp_withserial (object *args, object *env) {
     object *params = first(args);
     object *var = first(params);
     int address = integer(eval(second(params), env));
@@ -1638,7 +1646,7 @@ object *sp_withserial (object * args, object * env) {
     return result;
 }
 
-object *sp_withi2c (object * args, object * env) {
+object *sp_withi2c (object *args, object *env) {
     object *params = first(args);
     object *var = first(params);
     int address = integer(eval(second(params), env));
@@ -1688,7 +1696,7 @@ void mySPIbegin (int sdcardSSPin) {
 }
 // Kaef: END Block
 
-object *sp_withspi (object * args, object * env) {
+object *sp_withspi (object *args, object *env) {
     object *params = first(args);
     object *var = first(params);
     int pin = integer(eval(second(params), env));
@@ -1722,7 +1730,7 @@ object *sp_withspi (object * args, object * env) {
     return result;
 }
 
-object *sp_withsdcard (object * args, object * env) {
+object *sp_withsdcard (object *args, object *env) {
 #if defined(sdcardsupport)
     object *params = first(args);
     object *var = first(params);
@@ -1754,7 +1762,7 @@ object *sp_withsdcard (object * args, object * env) {
 #endif
 }
 
-object *sp_withclient (object * args, object * env) {
+object *sp_withclient (object *args, object *env) {
     object *params = first(args);
     object *var = first(params);
     params = cdr(params);
@@ -1783,7 +1791,7 @@ object *sp_withclient (object * args, object * env) {
 
 // Tail-recursive forms
 
-object *tf_progn (object * args, object * env) {
+object *tf_progn (object *args, object *env) {
     if (args == NULL) return nil;
     object *more = cdr(args);
     while (more != NULL) {
@@ -1795,19 +1803,19 @@ object *tf_progn (object * args, object * env) {
     return car(args);
 }
 
-object *tf_return (object * args, object * env) {
+object *tf_return (object *args, object *env) {
     setflag(RETURNFLAG);
     return tf_progn(args, env);
 }
 
-object *tf_if (object * args, object * env) {
+object *tf_if (object *args, object *env) {
     if (args == NULL || cdr(args) == NULL) error(PSTR("'if' missing argument(s)"));
     if (eval(first(args), env) != nil) return second(args);
     args = cddr(args);
     return (args != NULL) ? first(args) : nil;
 }
 
-object *tf_cond (object * args, object * env) {
+object *tf_cond (object *args, object *env) {
     while (args != NULL) {
         object *clause = first(args);
         if (!consp(clause)) error2(clause, PSTR("is an illegal clause"));
@@ -1821,19 +1829,19 @@ object *tf_cond (object * args, object * env) {
     return nil;
 }
 
-object *tf_when (object * args, object * env) {
+object *tf_when (object *args, object *env) {
     if (args == NULL) error(PSTR("'when' missing argument"));
     if (eval(first(args), env) != nil) return tf_progn(cdr(args), env);
     else return nil;
 }
 
-object *tf_unless (object * args, object * env) {
+object *tf_unless (object *args, object *env) {
     if (args == NULL) error(PSTR("'unless' missing argument"));
     if (eval(first(args), env) != nil) return nil;
     else return tf_progn(cdr(args), env);
 }
 
-object *tf_and (object * args, object * env) {
+object *tf_and (object *args, object *env) {
     if (args == NULL) return tee;
     object *more = cdr(args);
     while (more != NULL) {
@@ -1844,7 +1852,7 @@ object *tf_and (object * args, object * env) {
     return car(args);
 }
 
-object *tf_or (object * args, object * env) {
+object *tf_or (object *args, object *env) {
     object *more = cdr(args);
     while (more != NULL) {
         object *result = eval(car(args), env);
@@ -1857,121 +1865,121 @@ object *tf_or (object * args, object * env) {
 
 // Core functions
 
-object *fn_not (object * args, object * env) {
+object *fn_not (object *args, object *env) {
     (void) env;
     return (first(args) == nil) ? tee : nil;
 }
 
-object *fn_cons (object * args, object * env) {
+object *fn_cons (object *args, object *env) {
     (void) env;
     return cons(first(args), second(args));
 }
 
-object *fn_atom (object * args, object * env) {
+object *fn_atom (object *args, object *env) {
     (void) env;
     return atom(first(args)) ? tee : nil;
 }
 
-object *fn_listp (object * args, object * env) {
+object *fn_listp (object *args, object *env) {
     (void) env;
     return listp(first(args)) ? tee : nil;
 }
 
-object *fn_consp (object * args, object * env) {
+object *fn_consp (object *args, object *env) {
     (void) env;
     return consp(first(args)) ? tee : nil;
 }
 
-object *fn_symbolp (object * args, object * env) {
+object *fn_symbolp (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     return symbolp(arg) ? tee : nil;
 }
 
-object *fn_streamp (object * args, object * env) {
+object *fn_streamp (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     return streamp(arg) ? tee : nil;
 }
 
-object *fn_eq (object * args, object * env) {
+object *fn_eq (object *args, object *env) {
     (void) env;
     return eq(first(args), second(args)) ? tee : nil;
 }
 
 // List functions
 
-object *fn_car (object * args, object * env) {
+object *fn_car (object *args, object *env) {
     (void) env;
     return carx(first(args));
 }
 
-object *fn_cdr (object * args, object * env) {
+object *fn_cdr (object *args, object *env) {
     (void) env;
     return cdrx(first(args));
 }
 
-object *fn_caar (object * args, object * env) {
+object *fn_caar (object *args, object *env) {
     (void) env;
     return carx(carx(first(args)));
 }
 
-object *fn_cadr (object * args, object * env) {
+object *fn_cadr (object *args, object *env) {
     (void) env;
     return carx(cdrx(first(args)));
 }
 
-object *fn_cdar (object * args, object * env) {
+object *fn_cdar (object *args, object *env) {
     (void) env;
     return cdrx(carx(first(args)));
 }
 
-object *fn_cddr (object * args, object * env) {
+object *fn_cddr (object *args, object *env) {
     (void) env;
     return cdrx(cdrx(first(args)));
 }
 
-object *fn_caaar (object * args, object * env) {
+object *fn_caaar (object *args, object *env) {
     (void) env;
     return carx(carx(carx(first(args))));
 }
 
-object *fn_caadr (object * args, object * env) {
+object *fn_caadr (object *args, object *env) {
     (void) env;
     return carx(carx(cdrx(first(args))));
 }
 
-object *fn_cadar (object * args, object * env) {
+object *fn_cadar (object *args, object *env) {
     (void) env;
     return carx(cdrx(carx(first(args))));
 }
 
-object *fn_caddr (object * args, object * env) {
+object *fn_caddr (object *args, object *env) {
     (void) env;
     return carx(cdrx(cdrx(first(args))));
 }
 
-object *fn_cdaar (object * args, object * env) {
+object *fn_cdaar (object *args, object *env) {
     (void) env;
     return cdrx(carx(carx(first(args))));
 }
 
-object *fn_cdadr (object * args, object * env) {
+object *fn_cdadr (object *args, object *env) {
     (void) env;
     return cdrx(carx(cdrx(first(args))));
 }
 
-object *fn_cddar (object * args, object * env) {
+object *fn_cddar (object *args, object *env) {
     (void) env;
     return cdrx(cdrx(carx(first(args))));
 }
 
-object *fn_cdddr (object * args, object * env) {
+object *fn_cdddr (object *args, object *env) {
     (void) env;
     return cdrx(cdrx(cdrx(first(args))));
 }
 
-object *fn_length (object * args, object * env) {
+object *fn_length (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     if (listp(arg)) return number(listlength(arg));
@@ -1979,12 +1987,12 @@ object *fn_length (object * args, object * env) {
     return number(stringlength(arg));
 }
 
-object *fn_list (object * args, object * env) {
+object *fn_list (object *args, object *env) {
     (void) env;
     return args;
 }
 
-object *fn_reverse (object * args, object * env) {
+object *fn_reverse (object *args, object *env) {
     (void) env;
     object *list = first(args);
     if (!listp(list)) error(PSTR("'reverse' argument is not a list"));
@@ -1996,7 +2004,7 @@ object *fn_reverse (object * args, object * env) {
     return result;
 }
 
-object *fn_nth (object * args, object * env) {
+object *fn_nth (object *args, object *env) {
     (void) env;
     int n = integer(first(args));
     object *list = second(args);
@@ -2009,7 +2017,7 @@ object *fn_nth (object * args, object * env) {
     return nil;
 }
 
-object *fn_assoc (object * args, object * env) {
+object *fn_assoc (object *args, object *env) {
     (void) env;
     object *key = first(args);
     object *list = second(args);
@@ -2017,7 +2025,7 @@ object *fn_assoc (object * args, object * env) {
     return assoc(key, list);
 }
 
-object *fn_member (object * args, object * env) {
+object *fn_member (object *args, object *env) {
     (void) env;
     object *item = first(args);
     object *list = second(args);
@@ -2029,7 +2037,7 @@ object *fn_member (object * args, object * env) {
     return nil;
 }
 
-object *fn_apply (object * args, object * env) {
+object *fn_apply (object *args, object *env) {
     object *previous = NULL;
     object *last = args;
     while (cdr(last) != NULL) {
@@ -2041,11 +2049,11 @@ object *fn_apply (object * args, object * env) {
     return apply(first(args), cdr(args), &env);
 }
 
-object *fn_funcall (object * args, object * env) {
+object *fn_funcall (object *args, object *env) {
     return apply(first(args), cdr(args), &env);
 }
 
-object *fn_append (object * args, object * env) {
+object *fn_append (object *args, object *env) {
     (void) env;
     object *head = NULL;
     object *tail = NULL;
@@ -2068,7 +2076,7 @@ object *fn_append (object * args, object * env) {
     return head;
 }
 
-object *fn_mapc (object * args, object * env) {
+object *fn_mapc (object *args, object *env) {
     object *function = first(args);
     object *list1 = second(args);
     object *result = list1;
@@ -2091,7 +2099,7 @@ object *fn_mapc (object * args, object * env) {
     return result;
 }
 
-object *fn_mapcar (object * args, object * env) {
+object *fn_mapcar (object *args, object *env) {
     object *function = first(args);
     object *list1 = second(args);
     if (!listp(list1)) error(PSTR("'mapcar' second argument is not a list"));
@@ -2139,7 +2147,7 @@ object *fn_mapcar (object * args, object * env) {
 
 // Arithmetic functions
 
-object *add_floats (object * args, float fresult) {
+object *add_floats (object *args, float fresult) {
     while (args != NULL) {
         object *arg = car(args);
         fresult = fresult + intfloat(arg);
@@ -2148,7 +2156,7 @@ object *add_floats (object * args, float fresult) {
     return makefloat(fresult);
 }
 
-object *fn_add (object * args, object * env) {
+object *fn_add (object *args, object *env) {
     (void) env;
     int result = 0;
     while (args != NULL) {
@@ -2169,7 +2177,7 @@ object *fn_add (object * args, object * env) {
     return number(result);
 }
 
-object *subtract_floats (object * args, float fresult) {
+object *subtract_floats (object *args, float fresult) {
     while (args != NULL) {
         object *arg = car(args);
         fresult = fresult - intfloat(arg);
@@ -2178,7 +2186,7 @@ object *subtract_floats (object * args, float fresult) {
     return makefloat(fresult);
 }
 
-object *negate (object * arg) {
+object *negate (object *arg) {
     if (integerp(arg)) {
         int result = integer(arg);
         if (result == INT_MIN) return makefloat(-fromfloat(arg));
@@ -2186,7 +2194,7 @@ object *negate (object * arg) {
     } else return makefloat(-fromfloat(arg));
 }
 
-object *fn_subtract (object * args, object * env) {
+object *fn_subtract (object *args, object *env) {
     (void) env;
 
     object *arg = car(args);
@@ -2216,7 +2224,7 @@ object *fn_subtract (object * args, object * env) {
     }
 }
 
-object *multiply_floats(object * args, float fresult) {
+object *multiply_floats(object *args, float fresult) {
     while (args != NULL) {
         object *arg = car(args);
         fresult = fresult * intfloat(arg);
@@ -2225,7 +2233,7 @@ object *multiply_floats(object * args, float fresult) {
     return makefloat(fresult);
 }
 
-object *fn_multiply (object * args, object * env) {
+object *fn_multiply (object *args, object *env) {
     (void) env;
     int result = 1;
     while (args != NULL) {
@@ -2242,7 +2250,7 @@ object *fn_multiply (object * args, object * env) {
     return number(result);
 }
 
-object *divide_floats (object * args, float fresult) {
+object *divide_floats (object *args, float fresult) {
     while (args != NULL) {
         object *arg = car(args);
         float f = intfloat(arg);
@@ -2253,7 +2261,7 @@ object *divide_floats (object * args, float fresult) {
     return makefloat(fresult);
 }
 
-object *fn_divide (object * args, object * env) {
+object *fn_divide (object *args, object *env) {
     (void) env;
     object* arg = first(args);
     args = cdr(args);
@@ -2291,7 +2299,7 @@ object *fn_divide (object * args, object * env) {
     }
 }
 
-object *fn_mod (object * args, object * env) {
+object *fn_mod (object *args, object *env) {
     (void) env;
     object *arg1 = first(args);
     object *arg2 = second(args);
@@ -2312,7 +2320,7 @@ object *fn_mod (object * args, object * env) {
     }
 }
 
-object *fn_oneplus (object * args, object * env) {
+object *fn_oneplus (object *args, object *env) {
     (void) env;
     object* arg = first(args);
     if (floatp(arg)) return makefloat(fromfloat(arg) + 1.0);
@@ -2323,7 +2331,7 @@ object *fn_oneplus (object * args, object * env) {
     }
 }
 
-object *fn_oneminus (object * args, object * env) {
+object *fn_oneminus (object *args, object *env) {
     (void) env;
     object* arg = first(args);
     if (floatp(arg)) return makefloat(fromfloat(arg) - 1.0);
@@ -2334,7 +2342,7 @@ object *fn_oneminus (object * args, object * env) {
     }
 }
 
-object *fn_abs (object * args, object * env) {
+object *fn_abs (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     if (floatp(arg)) return makefloat(abs(fromfloat(arg)));
@@ -2345,14 +2353,14 @@ object *fn_abs (object * args, object * env) {
     }
 }
 
-object *fn_random (object * args, object * env) {
+object *fn_random (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     if (integerp(arg)) return number(random(integer(arg)));
     else return makefloat((float)rand() / (float)(RAND_MAX / fromfloat(arg)));
 }
 
-object *fn_maxfn (object * args, object * env) {
+object *fn_maxfn (object *args, object *env) {
     (void) env;
     object* result = first(args);
     args = cdr(args);
@@ -2366,7 +2374,7 @@ object *fn_maxfn (object * args, object * env) {
     return result;
 }
 
-object *fn_minfn (object * args, object * env) {
+object *fn_minfn (object *args, object *env) {
     (void) env;
     object* result = first(args);
     args = cdr(args);
@@ -2382,7 +2390,7 @@ object *fn_minfn (object * args, object * env) {
 
 // Arithmetic comparisons
 
-object *fn_noteq (object * args, object * env) {
+object *fn_noteq (object *args, object *env) {
     (void) env;
     while (args != NULL) {
         object *nargs = args;
@@ -2400,7 +2408,7 @@ object *fn_noteq (object * args, object * env) {
     return tee;
 }
 
-object *fn_numeq (object * args, object * env) {
+object *fn_numeq (object *args, object *env) {
     (void) env;
     object *arg1 = first(args);
     args = cdr(args);
@@ -2415,7 +2423,7 @@ object *fn_numeq (object * args, object * env) {
     return tee;
 }
 
-object *fn_less (object * args, object * env) {
+object *fn_less (object *args, object *env) {
     (void) env;
     object *arg1 = first(args);
     args = cdr(args);
@@ -2430,7 +2438,7 @@ object *fn_less (object * args, object * env) {
     return tee;
 }
 
-object *fn_lesseq (object * args, object * env) {
+object *fn_lesseq (object *args, object *env) {
     (void) env;
     object *arg1 = first(args);
     args = cdr(args);
@@ -2445,7 +2453,7 @@ object *fn_lesseq (object * args, object * env) {
     return tee;
 }
 
-object *fn_greater (object * args, object * env) {
+object *fn_greater (object *args, object *env) {
     (void) env;
     object *arg1 = first(args);
     args = cdr(args);
@@ -2460,7 +2468,7 @@ object *fn_greater (object * args, object * env) {
     return tee;
 }
 
-object *fn_greatereq (object * args, object * env) {
+object *fn_greatereq (object *args, object *env) {
     (void) env;
     object *arg1 = first(args);
     args = cdr(args);
@@ -2475,45 +2483,45 @@ object *fn_greatereq (object * args, object * env) {
     return tee;
 }
 
-object *fn_plusp (object * args, object * env) {
+object *fn_plusp (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     if (floatp(arg)) return (fromfloat(arg) > 0.0) ? tee : nil;
     return (integer(arg) > 0) ? tee : nil;
 }
 
-object *fn_minusp (object * args, object * env) {
+object *fn_minusp (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     if (floatp(arg)) return (fromfloat(arg) < 0.0) ? tee : nil;
     return (integer(arg) < 0) ? tee : nil;
 }
 
-object *fn_zerop (object * args, object * env) {
+object *fn_zerop (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     if (floatp(arg)) return (fromfloat(arg) == 0.0) ? tee : nil;
     return (integer(arg) == 0) ? tee : nil;
 }
 
-object *fn_oddp (object * args, object * env) {
+object *fn_oddp (object *args, object *env) {
     (void) env;
     return ((integer(first(args)) & 1) == 1) ? tee : nil;
 }
 
-object *fn_evenp (object * args, object * env) {
+object *fn_evenp (object *args, object *env) {
     (void) env;
     return ((integer(first(args)) & 1) == 0) ? tee : nil;
 }
 
 // Number functions
 
-object *fn_integerp (object * args, object * env) {
+object *fn_integerp (object *args, object *env) {
     (void) env;
     return integerp(first(args)) ? tee : nil;
 }
 
-object *fn_numberp (object * args, object * env) {
+object *fn_numberp (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     return (integerp(arg) || floatp(arg)) ? tee : nil;
@@ -2521,43 +2529,43 @@ object *fn_numberp (object * args, object * env) {
 
 // Floating-point functions
 
-object *fn_floatfn (object * args, object * env) {
+object *fn_floatfn (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     return (floatp(arg)) ? arg : makefloat((float)integer(arg));
 }
 
-object *fn_floatp (object * args, object * env) {
+object *fn_floatp (object *args, object *env) {
     (void) env;
     return floatp(first(args)) ? tee : nil;
 }
 
-object *fn_sin (object * args, object * env) {
+object *fn_sin (object *args, object *env) {
     (void) env;
     return makefloat(sin(intfloat(first(args))));
 }
 
-object *fn_cos (object * args, object * env) {
+object *fn_cos (object *args, object *env) {
     (void) env;
     return makefloat(cos(intfloat(first(args))));
 }
 
-object *fn_tan (object * args, object * env) {
+object *fn_tan (object *args, object *env) {
     (void) env;
     return makefloat(tan(intfloat(first(args))));
 }
 
-object *fn_asin (object * args, object * env) {
+object *fn_asin (object *args, object *env) {
     (void) env;
     return makefloat(asin(intfloat(first(args))));
 }
 
-object *fn_acos (object * args, object * env) {
+object *fn_acos (object *args, object *env) {
     (void) env;
     return makefloat(acos(intfloat(first(args))));
 }
 
-object *fn_atan (object * args, object * env) {
+object *fn_atan (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     int div = 1;
@@ -2566,32 +2574,32 @@ object *fn_atan (object * args, object * env) {
     return makefloat(atan2(intfloat(arg), div));
 }
 
-object *fn_sinh (object * args, object * env) {
+object *fn_sinh (object *args, object *env) {
     (void) env;
     return makefloat(sinh(intfloat(first(args))));
 }
 
-object *fn_cosh (object * args, object * env) {
+object *fn_cosh (object *args, object *env) {
     (void) env;
     return makefloat(cosh(intfloat(first(args))));
 }
 
-object *fn_tanh (object * args, object * env) {
+object *fn_tanh (object *args, object *env) {
     (void) env;
     return makefloat(tanh(intfloat(first(args))));
 }
 
-object *fn_exp (object * args, object * env) {
+object *fn_exp (object *args, object *env) {
     (void) env;
     return makefloat(exp(intfloat(first(args))));
 }
 
-object *fn_sqrt (object * args, object * env) {
+object *fn_sqrt (object *args, object *env) {
     (void) env;
     return makefloat(sqrt(intfloat(first(args))));
 }
 
-object *fn_log (object * args, object * env) {
+object *fn_log (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     float fresult = log(intfloat(arg));
@@ -2610,7 +2618,7 @@ int intpower (int base, int exp) {
     return result;
 }
 
-object *fn_expt (object * args, object * env) {
+object *fn_expt (object *args, object *env) {
     (void) env;
     object *arg1 = first(args); object *arg2 = second(args);
     float float1 = intfloat(arg1);
@@ -2621,7 +2629,7 @@ object *fn_expt (object * args, object * env) {
     return makefloat(exp(value));
 }
 
-object *fn_ceiling (object * args, object * env) {
+object *fn_ceiling (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     args = cdr(args);
@@ -2629,7 +2637,7 @@ object *fn_ceiling (object * args, object * env) {
     else return number(ceil(intfloat(arg)));
 }
 
-object *fn_floor (object * args, object * env) {
+object *fn_floor (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     args = cdr(args);
@@ -2637,7 +2645,7 @@ object *fn_floor (object * args, object * env) {
     else return number(floor(intfloat(arg)));
 }
 
-object *fn_truncate (object * args, object * env) {
+object *fn_truncate (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     args = cdr(args);
@@ -2649,7 +2657,7 @@ int myround (float number) {
     return (number >= 0) ? (int)(number + 0.5) : (int)(number - 0.5);
 }
 
-object *fn_round (object * args, object * env) {
+object *fn_round (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     args = cdr(args);
@@ -2659,7 +2667,7 @@ object *fn_round (object * args, object * env) {
 
 // Characters
 
-object *fn_char (object * args, object * env) {
+object *fn_char (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     if (!stringp(arg)) error2(arg, PSTR("is not a string"));
@@ -2668,29 +2676,29 @@ object *fn_char (object * args, object * env) {
     return character(c);
 }
 
-object *fn_charcode (object * args, object * env) {
+object *fn_charcode (object *args, object *env) {
     (void) env;
     return number(fromchar(first(args)));
 }
 
-object *fn_codechar (object * args, object * env) {
+object *fn_codechar (object *args, object *env) {
     (void) env;
     return character(integer(first(args)));
 }
 
-object *fn_characterp (object * args, object * env) {
+object *fn_characterp (object *args, object *env) {
     (void) env;
     return characterp(first(args)) ? tee : nil;
 }
 
 // Strings
 
-object *fn_stringp (object * args, object * env) {
+object *fn_stringp (object *args, object *env) {
     (void) env;
     return stringp(first(args)) ? tee : nil;
 }
 
-bool stringcompare (object * args, bool lt, bool gt, bool eq) {
+bool stringcompare (object *args, bool lt, bool gt, bool eq) {
     object *arg1 = first(args);
     object *arg2 = second(args);
     if (!stringp(arg1) || !stringp(arg2)) error(PSTR("String compare argument is not a string"));
@@ -2707,22 +2715,22 @@ bool stringcompare (object * args, bool lt, bool gt, bool eq) {
     return eq;
 }
 
-object *fn_stringeq (object * args, object * env) {
+object *fn_stringeq (object *args, object *env) {
     (void) env;
     return stringcompare(args, false, false, true) ? tee : nil;
 }
 
-object *fn_stringless (object * args, object * env) {
+object *fn_stringless (object *args, object *env) {
     (void) env;
     return stringcompare(args, true, false, false) ? tee : nil;
 }
 
-object *fn_stringgreater (object * args, object * env) {
+object *fn_stringgreater (object *args, object *env) {
     (void) env;
     return stringcompare(args, false, true, false) ? tee : nil;
 }
 
-object *fn_sort (object * args, object * env) {
+object *fn_sort (object *args, object *env) {
     if (first(args) == NULL) return nil;
     object *list = cons(nil, first(args));
     push(list, GCStack);
@@ -2748,7 +2756,7 @@ object *fn_sort (object * args, object * env) {
     return cdr(list);
 }
 
-object *fn_stringfn (object * args, object * env) {
+object *fn_stringfn (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     int type = arg->type;
@@ -2776,7 +2784,7 @@ object *fn_stringfn (object * args, object * env) {
     return obj;
 }
 
-object *fn_concatenate (object * args, object * env) {
+object *fn_concatenate (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     symbol_t name = arg->name;
@@ -2805,7 +2813,7 @@ object *fn_concatenate (object * args, object * env) {
     return result;
 }
 
-object *fn_subseq (object * args, object * env) {
+object *fn_subseq (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     if (!stringp(arg)) error(PSTR("'subseq' first argument is not a string"));
@@ -2836,7 +2844,7 @@ int gstr () {
     return (c != 0) ? c : '\n'; // -1?
 }
 
-object *fn_readfromstring (object * args, object * env) {
+object *fn_readfromstring (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     if (!stringp(arg)) error(PSTR("'read-from-string' argument is not a string"));
@@ -2849,7 +2857,7 @@ void pstr (char c) {
     buildstring(c, &GlobalStringIndex, &GlobalString);
 }
 
-object *fn_princtostring (object * args, object * env) {
+object *fn_princtostring (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     object *obj = myalloc();
@@ -2864,7 +2872,7 @@ object *fn_princtostring (object * args, object * env) {
     return obj;
 }
 
-object *fn_prin1tostring (object * args, object * env) {
+object *fn_prin1tostring (object *args, object *env) {
     (void) env;
     object *arg = first(args);
     object *obj = myalloc();
@@ -2878,7 +2886,7 @@ object *fn_prin1tostring (object * args, object * env) {
 
 // Bitwise operators
 
-object *fn_logand (object * args, object * env) {
+object *fn_logand (object *args, object *env) {
     (void) env;
     int result = -1;
     while (args != NULL) {
@@ -2888,7 +2896,7 @@ object *fn_logand (object * args, object * env) {
     return number(result);
 }
 
-object *fn_logior (object * args, object * env) {
+object *fn_logior (object *args, object *env) {
     (void) env;
     int result = 0;
     while (args != NULL) {
@@ -2898,7 +2906,7 @@ object *fn_logior (object * args, object * env) {
     return number(result);
 }
 
-object *fn_logxor (object * args, object * env) {
+object *fn_logxor (object *args, object *env) {
     (void) env;
     int result = 0;
     while (args != NULL) {
@@ -2908,13 +2916,13 @@ object *fn_logxor (object * args, object * env) {
     return number(result);
 }
 
-object *fn_lognot (object * args, object * env) {
+object *fn_lognot (object *args, object *env) {
     (void) env;
     int result = integer(car(args));
     return number(~result);
 }
 
-object *fn_ash (object * args, object * env) {
+object *fn_ash (object *args, object *env) {
     (void) env;
     int value = integer(first(args));
     int count = integer(second(args));
@@ -2924,7 +2932,7 @@ object *fn_ash (object * args, object * env) {
         return number(value >> abs(count));
 }
 
-object *fn_logbitp (object * args, object * env) {
+object *fn_logbitp (object *args, object *env) {
     (void) env;
     int index = integer(first(args));
     int value = integer(second(args));
@@ -2933,29 +2941,29 @@ object *fn_logbitp (object * args, object * env) {
 
 // System functions
 
-object *fn_eval (object * args, object * env) {
+object *fn_eval (object *args, object *env) {
     return eval(first(args), env);
 }
 
-object *fn_globals (object * args, object * env) {
+object *fn_globals (object *args, object *env) {
     (void) args;
     if (GlobalEnv == NULL) return nil;
     return fn_mapcar(cons(symbol(CAR), cons(GlobalEnv, nil)), env);
 }
 
-object *fn_locals (object * args, object * env) {
+object *fn_locals (object *args, object *env) {
     (void) args;
     return env;
 }
 
-object *fn_makunbound (object * args, object * env) {
+object *fn_makunbound (object *args, object *env) {
     (void) env;
     object *key = first(args);
     deletesymbol(key->name);
     return (delassoc(key, &GlobalEnv) != NULL) ? tee : nil;
 }
 
-object *fn_break (object * args, object * env) {
+object *fn_break (object *args, object *env) {
     (void) args;
     pfstring(PSTR("\rBreak!\r"), pserial);
     BreakLevel++;
@@ -2964,13 +2972,13 @@ object *fn_break (object * args, object * env) {
     return nil;
 }
 
-object *fn_read (object * args, object * env) {
+object *fn_read (object *args, object *env) {
     (void) env;
     gfun_t gfun = gstreamfun(args);
     return read(gfun);
 }
 
-object *fn_prin1 (object * args, object * env) {
+object *fn_prin1 (object *args, object *env) {
     (void) env;
     object *obj = first(args);
     pfun_t pfun = pstreamfun(cdr(args));
@@ -2978,7 +2986,7 @@ object *fn_prin1 (object * args, object * env) {
     return obj;
 }
 
-object *fn_print (object * args, object * env) {
+object *fn_print (object *args, object *env) {
     (void) env;
     object *obj = first(args);
     pfun_t pfun = pstreamfun(cdr(args));
@@ -2988,7 +2996,7 @@ object *fn_print (object * args, object * env) {
     return obj;
 }
 
-object *fn_princ (object * args, object * env) {
+object *fn_princ (object *args, object *env) {
     (void) env;
     object *obj = first(args);
     pfun_t pfun = pstreamfun(cdr(args));
@@ -2999,27 +3007,27 @@ object *fn_princ (object * args, object * env) {
     return obj;
 }
 
-object *fn_terpri (object * args, object * env) {
+object *fn_terpri (object *args, object *env) {
     (void) env;
     pfun_t pfun = pstreamfun(args);
     pln(pfun);
     return nil;
 }
 
-object *fn_readbyte (object * args, object * env) {
+object *fn_readbyte (object *args, object *env) {
     (void) env;
     gfun_t gfun = gstreamfun(args);
     int c = gfun();
     return (c == -1) ? nil : number(c);
 }
 
-object *fn_readline (object * args, object * env) {
+object *fn_readline (object *args, object *env) {
     (void) env;
     gfun_t gfun = gstreamfun(args);
     return readstring('\n', gfun);
 }
 
-object *fn_writebyte (object * args, object * env) {
+object *fn_writebyte (object *args, object *env) {
     (void) env;
     int value = integer(first(args));
     pfun_t pfun = pstreamfun(cdr(args));
@@ -3027,7 +3035,7 @@ object *fn_writebyte (object * args, object * env) {
     return nil;
 }
 
-object *fn_writestring (object * args, object * env) {
+object *fn_writestring (object *args, object *env) {
     (void) env;
     object *obj = first(args);
     pfun_t pfun = pstreamfun(cdr(args));
@@ -3038,7 +3046,7 @@ object *fn_writestring (object * args, object * env) {
     return nil;
 }
 
-object *fn_writeline (object * args, object * env) {
+object *fn_writeline (object *args, object *env) {
     (void) env;
     object *obj = first(args);
     pfun_t pfun = pstreamfun(cdr(args));
@@ -3050,7 +3058,7 @@ object *fn_writeline (object * args, object * env) {
     return nil;
 }
 
-object *fn_restarti2c (object * args, object * env) {
+object *fn_restarti2c (object *args, object *env) {
     (void) env;
     int stream = first(args)->integer;
     args = cdr(args);
@@ -3066,7 +3074,7 @@ object *fn_restarti2c (object * args, object * env) {
     return I2Crestart(address, read) ? tee : nil;
 }
 
-object *fn_gc (object * obj, object * env) {
+object *fn_gc (object *obj, object *env) {
     int initial = Freespace;
     unsigned long start = micros();
     gc(obj, env);
@@ -3079,23 +3087,23 @@ object *fn_gc (object * obj, object * env) {
     return nil;
 }
 
-object *fn_room (object * args, object * env) {
+object *fn_room (object *args, object *env) {
     (void) args, (void) env;
     return number(Freespace);
 }
 
-object *fn_saveimage (object * args, object * env) {
+object *fn_saveimage (object *args, object *env) {
     if (args != NULL) args = eval(first(args), env);
     return number(saveimage(args));
 }
 
-object *fn_loadimage (object * args, object * env) {
+object *fn_loadimage (object *args, object *env) {
     (void) env;
     if (args != NULL) args = first(args);
     return number(loadimage(args));
 }
 
-object *fn_cls (object * args, object * env) {
+object *fn_cls (object *args, object *env) {
     (void) args, (void) env;
     pserial(12);
     return nil;
@@ -3103,7 +3111,7 @@ object *fn_cls (object * args, object * env) {
 
 // Arduino procedures
 
-object *fn_pinmode (object * args, object * env) {
+object *fn_pinmode (object *args, object *env) {
     (void) env;
     int pin = integer(first(args));
     object *mode = second(args);
@@ -3116,13 +3124,13 @@ object *fn_pinmode (object * args, object * env) {
     return nil;
 }
 
-object *fn_digitalread (object * args, object * env) {
+object *fn_digitalread (object *args, object *env) {
     (void) env;
     int pin = integer(first(args));
     if (digitalRead(pin) != 0) return tee; else return nil;
 }
 
-object *fn_digitalwrite (object * args, object * env) {
+object *fn_digitalwrite (object *args, object *env) {
     (void) env;
     int pin = integer(first(args));
     object *mode = second(args);
@@ -3131,14 +3139,14 @@ object *fn_digitalwrite (object * args, object * env) {
     return mode;
 }
 
-object *fn_analogread (object * args, object * env) {
+object *fn_analogread (object *args, object *env) {
     (void) env;
     int pin = integer(first(args));
     checkanalogread(pin);
     return number(analogRead(pin));
 }
 
-object *fn_analogwrite (object * args, object * env) {
+object *fn_analogwrite (object *args, object *env) {
     (void) env;
     int pin = integer(first(args));
     checkanalogwrite(pin);
@@ -3147,26 +3155,26 @@ object *fn_analogwrite (object * args, object * env) {
     return value;
 }
 
-object *fn_delay (object * args, object * env) {
+object *fn_delay (object *args, object *env) {
     (void) env;
     object *arg1 = first(args);
     delay(integer(arg1));
     return arg1;
 }
 
-object *fn_millis (object * args, object * env) {
+object *fn_millis (object *args, object *env) {
     (void) args, (void) env;
     return number(millis());
 }
 
-object *fn_sleep (object * args, object * env) {
+object *fn_sleep (object *args, object *env) {
     (void) env;
     object *arg1 = first(args);
     sleep(integer(arg1));
     return arg1;
 }
 
-object *fn_note (object * args, object * env) {
+object *fn_note (object *args, object *env) {
     (void) env;
     static int pin = 255;
     if (args != NULL) {
@@ -3182,7 +3190,7 @@ object *fn_note (object * args, object * env) {
 
 // Tree Editor
 
-object *fn_edit (object * args, object * env) {
+object *fn_edit (object *args, object *env) {
     object *fun = first(args);
     object *pair = findvalue(fun, env);
     clrflag(EXITEDITOR);
@@ -3191,7 +3199,7 @@ object *fn_edit (object * args, object * env) {
     return arg;
 }
 
-object *edit (object * fun) {
+object *edit (object *fun) {
     while (1) {
         if (tstflag(EXITEDITOR)) return fun;
         char c = gserial();
@@ -3223,23 +3231,23 @@ void pcount (char c) {
     GlobalStringIndex++;
 }
 
-int atomwidth (object * obj) {
+int atomwidth (object *obj) {
     GlobalStringIndex = 0;
     printobject(obj, pcount);
     return GlobalStringIndex;
 }
 
-boolean quoted (object * obj) {
+boolean quoted (object *obj) {
     return (consp(obj) && car(obj) != NULL && car(obj)->name == QUOTE && consp(cdr(obj)) && cddr(obj) == NULL);
 }
 
-int subwidth (object * obj, int w) {
+int subwidth (object *obj, int w) {
     if (atom(obj)) return w - atomwidth(obj);
     if (quoted(obj)) return subwidthlist(car(cdr(obj)), w - 1);
     return subwidthlist(obj, w - 1);
 }
 
-int subwidthlist (object * form, int w) {
+int subwidthlist (object *form, int w) {
     while (form != NULL && w >= 0) {
         if (atom(form)) return w - (2 + atomwidth(form));
         w = subwidth(car(form), w - 1);
@@ -3248,7 +3256,7 @@ int subwidthlist (object * form, int w) {
     return w;
 }
 
-void superprint (object * form, int lm, pfun_t pfun) {
+void superprint (object *form, int lm, pfun_t pfun) {
     if (atom(form)) {
         if (symbolp(form) && form->name == NOTHING) pstring(name(form), pfun);
         else printobject(form, pfun);
@@ -3265,7 +3273,7 @@ const int ppspecials = 15;
 const char ppspecial[ppspecials] PROGMEM =
 { DOTIMES, DOLIST, IF, SETQ, TEE, LET, LETSTAR, LAMBDA, WHEN, UNLESS, WITHI2C, WITHSERIAL, WITHSPI, WITHSDCARD, WITHCLIENT };
 
-void supersub (object * form, int lm, int super, pfun_t pfun) {
+void supersub (object *form, int lm, int super, pfun_t pfun) {
     int special = 0, separate = 1;
     object *arg = car(form);
     if (symbolp(arg)) {
@@ -3304,7 +3312,7 @@ void supersub (object * form, int lm, int super, pfun_t pfun) {
     pfun(')'); return;
 }
 
-object *fn_pprint (object * args, object * env) {
+object *fn_pprint (object *args, object *env) {
     (void) env;
     object *obj = first(args);
     pfun_t pfun = pstreamfun(cdr(args));
@@ -3313,7 +3321,7 @@ object *fn_pprint (object * args, object * env) {
     return symbol(NOTHING);
 }
 
-object *fn_pprintall (object * args, object * env) {
+object *fn_pprintall (object *args, object *env) {
     (void) args, (void) env;
     object *globals = GlobalEnv;
     while (globals != NULL) {
@@ -3330,7 +3338,7 @@ object *fn_pprintall (object * args, object * env) {
     return symbol(NOTHING);
 }
 
-object *fn_require (object * args, object * env) {
+object *fn_require (object *args, object *env) {
     object *arg = first(args);
     object *globals = GlobalEnv;
     if (!symbolp(arg)) error(PSTR("'require' argument is not a symbol"));
@@ -3355,7 +3363,7 @@ object *fn_require (object * args, object * env) {
     return nil;
 }
 
-object *fn_listlibrary (object * args, object * env) {
+object *fn_listlibrary (object *args, object *env) {
     (void) args, (void) env;
     GlobalStringIndex = 0;
     object *line = read(glibrary);
@@ -3370,19 +3378,19 @@ object *fn_listlibrary (object * args, object * env) {
 
 // Wi-fi
 
-object *fn_available (object * args, object * env) {
+object *fn_available (object *args, object *env) {
     (void) env;
     if (istream(first(args)) >> 8 != WIFISTREAM) error(PSTR("'available' invalid stream"));
     return number(client.available());
 }
 
-object *fn_wifiserver (object * args, object * env) {
+object *fn_wifiserver (object *args, object *env) {
     (void) args, (void) env;
     server.begin();
     return nil;
 }
 
-object *fn_wifisoftap (object * args, object * env) {
+object *fn_wifisoftap (object *args, object *env) {
     (void) env;
     char ssid[33], pass[65];
     if (args == NULL) return WiFi.softAPdisconnect(true) ? tee : nil;
@@ -3403,18 +3411,18 @@ object *fn_wifisoftap (object * args, object * env) {
     return lispstring((char*)WiFi.softAPIP().toString().c_str());
 }
 
-object *fn_connected (object * args, object * env) {
+object *fn_connected (object *args, object *env) {
     (void) env;
     if (istream(first(args)) >> 8 != WIFISTREAM) error(PSTR("'connected' invalid stream"));
     return client.connected() ? tee : nil;
 }
 
-object *fn_wifilocalip (object * args, object * env) {
+object *fn_wifilocalip (object *args, object *env) {
     (void) args, (void) env;
     return lispstring((char*)WiFi.localIP().toString().c_str());
 }
 
-object *fn_wificonnect (object * args, object * env) {
+object *fn_wificonnect (object *args, object *env) {
     (void) env;
     char ssid[33], pass[65];
     if (args == NULL) {
@@ -3434,7 +3442,7 @@ object *fn_wificonnect (object * args, object * env) {
 // Insert your own function definitions here
 // Kaef: BEG (large) Block
 // BEG (Kaef reset_reason)
-object *fn_resetreason (object * args, object * env) {
+object *fn_resetreason (object *args, object *env) {
     (void) args, (void) env;
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
@@ -3445,7 +3453,7 @@ object *fn_resetreason (object * args, object * env) {
 }
 // END (Kaef reset_reason)
 
-object *fn_enabletimerwakeup (object * args, object * env) {
+object *fn_enabletimerwakeup (object *args, object *env) {
     (void) env;
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
@@ -3466,7 +3474,7 @@ object *fn_enabletimerwakeup (object * args, object * env) {
     return car(args);
 }
 
-object *fn_deepsleepstart (object * args, object * env) {
+object *fn_deepsleepstart (object *args, object *env) {
     (void) args, (void) env;
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
@@ -3484,7 +3492,7 @@ object *fn_deepsleepstart (object * args, object * env) {
     return nil;
 }
 
-object *fn_isolategpio (object * args, object * env) {
+object *fn_isolategpio (object *args, object *env) {
     (void) args, (void) env;
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
@@ -3517,7 +3525,7 @@ object *fn_isolategpio (object * args, object * env) {
     return nil;
 }
 
-object *fn_enableExt0Wakeup (object * args, object * env) {
+object *fn_enableExt0Wakeup (object *args, object *env) {
     (void) args, (void) env;
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
@@ -3554,7 +3562,7 @@ object *fn_enableExt0Wakeup (object * args, object * env) {
     return nil;
 }
 
-object *fn_getSleepWakeupCause (object * args, object * env) {
+object *fn_getSleepWakeupCause (object *args, object *env) {
     (void) args, (void) env;
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
@@ -3564,7 +3572,7 @@ object *fn_getSleepWakeupCause (object * args, object * env) {
     return nil;
 }
 
-object *fn_enableGpioWakeup (object * args, object * env) {
+object *fn_enableGpioWakeup (object *args, object *env) {
     (void) args, (void) env;
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
@@ -3611,7 +3619,7 @@ object *fn_enableGpioWakeup (object * args, object * env) {
     return nil;
 }
 
-object *fn_lightsleepstart (object * args, object * env) {
+object *fn_lightsleepstart (object *args, object *env) {
     (void) args, (void) env;
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
@@ -3635,7 +3643,7 @@ void printDebugStatus(unsigned int mask) {
     pfstring(PSTR(" set"), pserial);
 }
 
-object *fn_debugFlags (object * args, object * env) {
+object *fn_debugFlags (object *args, object *env) {
     (void) env;
     if (args != NULL) {
         object *mask = first(args);
@@ -3652,13 +3660,13 @@ object *fn_debugFlags (object * args, object * env) {
     return cons(number(debugFlags), NULL);
 }
 
-object *fn_listDir (object * args, object * env) {
+object *fn_listDir (object *args, object *env) {
     (void) args; (void) env;
-    #ifdef sdcardsupport
+#ifdef sdcardsupport
     listDir("/", 0);
-    #else
+#else
     error(PSTR("sdcardsupport not enabled"));
-    #endif
+#endif
     return nil;
 }
 
@@ -4136,7 +4144,7 @@ void testescape () {
 
 uint8_t End;
 
-object *eval (object * form, object * env) {
+object *eval (object *form, object *env) {
     int TC = 0;
 EVAL:
     yield(); // Needed to avoid Soft WDT Reset
@@ -4321,7 +4329,7 @@ void pstring (char *s, pfun_t pfun) {
     while (*s) pfun(*s++);
 }
 
-void printstring (object * form, pfun_t pfun) {
+void printstring (object *form, pfun_t pfun) {
     if (PrintReadably) pfun('"');
     form = cdr(form);
     while (form != NULL) {
@@ -4436,7 +4444,7 @@ void pfl (pfun_t pfun) {
     if (LastPrint != '\n') pfun('\n');
 }
 
-void printobject (object * form, pfun_t pfun) {
+void printobject (object *form, pfun_t pfun) {
     if (form == NULL) pfstring(PSTR("nil"), pfun);
     else if (listp(form) && issymbol(car(form), CLOSURE)) pfstring(PSTR("<closure>"), pfun);
     else if (listp(form)) {
@@ -4488,7 +4496,7 @@ int glibrary () {
     return (c != 0) ? c : -1; // -1?
 }
 
-void loadfromlibrary (object * env) {
+void loadfromlibrary (object *env) {
     GlobalStringIndex = 0;
     object *line = read(glibrary);
     while (line != NULL) {
@@ -4503,10 +4511,38 @@ int gserial () {
         LastChar = 0;
         return temp;
     }
+#ifdef PS2_KEYBOARD
+    while (!Serial.available()  && (!KybdAvailable())) {
+        if (keyboard.available()) {
+            char temp = keyboard.read();
+            //pserial(temp);
+            ProcessKey(temp);
+        }
+    }
+#else
     while (!Serial.available());
-    char temp = Serial.read();
-    if (temp != '\n') pserial(temp);
-    return temp;
+#endif
+    char temp = 0;
+    if (Serial.available()) {
+#ifdef ESP_WROVER_KIT
+        showCursor(false);
+#endif
+        temp = Serial.read();
+        if (temp != '\n') pserial(temp);
+        return temp;
+    }
+#ifdef PS2_KEYBOARD
+    else if (getNextKeyboardChar(&temp))
+    {
+        Serial.write(temp);
+        return temp;
+    }
+    else {
+        // should never happen...
+        resetKybdBuf();
+        return 0;
+    }
+#endif
 }
 
 object *nextitem (gfun_t gfun) {
@@ -4745,6 +4781,9 @@ void printEnabledFeatures () {
 #if defined LARGE_WORKSPACE
     pfstring(PSTR("      LARGE_WORKSPACE_SETUP"), pserial); pln(pserial);
 #endif
+#if defined PS2_KEYBOARD
+    pfstring(PSTR("      PS2_KEYBOARD"), pserial); pln(pserial);
+#endif
 }
 
 
@@ -4807,7 +4846,10 @@ void setup () {
         if (Serial) break;
     }
 #ifdef ESP_WROVER_KIT
-    setup_tft();
+    setupWroverKit();
+#endif
+#ifdef PS2_KEYBOARD
+    setupPS2Keyboard();
 #endif
     welcomeMessage(); // Kaef
     initworkspace();
@@ -4818,7 +4860,7 @@ void setup () {
 
 // Read/Evaluate/Print loop
 
-void repl (object * env) {
+void repl (object *env) {
     for (;;) {
         randomSeed(micros());
 
