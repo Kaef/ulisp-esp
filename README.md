@@ -1,14 +1,16 @@
 # ulisp-esp
 A version of the Lisp programming language for ESP32-based boards
-For more information see:
-http://www.ulisp.com/show?21T5
+
+For more information see: http://www.ulisp.com/show?21T5
+
+Thanks to David for writing and supporting this fine version of lisp.
 
 
 ## General remarks and changelog:
 * 2019-03-21: changed grafic library to TFT_eSPI (WROVER\_KIT\_LCD\_KAEF library can be used if wanted)
 
-### Installation
-A big thanks to everyone who wrote the below libraries. Please respect the licences of the used libraries.
+### Installation (WROVER-KIT-LCD, support for display & PS/2 keyboard)
+A big thanks to everyone who wrote the below libraries. 
 * TFT_eSPI: (works with WROVER-KIT-LCD V.4.1 only (ILI9341 chip only unless re-configured)
   * use arduino library manager to install TFT_eSPI library
   * copy ulisp-esp/libraries/TFT_eSPI/User_setup.h to arduino-libraries-folder/TFT_eSPI/User_setup.h (overwrite existing file)
@@ -19,6 +21,9 @@ OR
   * comment out the line "#define USE\_TFT\_eSPI\_LIB in file esp-wrover-kit-display.h (around line 11)
 * PS2Kbd:
   * copy ulisp-esp/libraries/PS2Kbd folder to arduino-libraries-folder or download PS2Kbd library from github
+
+Please respect the licences of the used libraries.
+
 
 ### Changelog:
 * 2019-03-20: PS/2 keyboard support (including parenthesis highlighting)
@@ -50,6 +55,8 @@ OR
   * try the simpleRead example from PS2Kbd library (the keyboard should work).
 
 * 2019-02: extend SYMBOLTABLESIZE to 32kBytes, extend the number of long symbols (no restrictions), UNTESTED! (wrote a #warning message in the sources)
+
+* 2019-02: added (ls) command to list the files from the sd-card (see below: Chap. Added functions)
 
 * 2019-01-27: moved ulisp-esp V. 2.5 to subdirectory ulisp-2.5-esp, renamed ulisp-esp.ino to ulisp-2.5-esp.ino
 * 2019-01-27: adding new ulisp-features done by David becomes a heavy task I decided to work another way: I'll use David's 'official' ulisp version and redo my esp32 patches (PSRAM support, esp32-deepsleep, sdcard-pin-configuration)
