@@ -1,5 +1,5 @@
 # ulisp-esp
-A version of the Lisp programming language for ESP32-based boards
+A version of the Lisp programming language for ESP32-based boards, supporting 4MB PSRAM.
 
 For more information see: http://www.ulisp.com/show?21T5
 
@@ -27,7 +27,7 @@ Please respect the licences of the used libraries.
 ### Changelog:
 
 * 2019-03-21: 
-  * changed grafic library to TFT_eSPI (WROVER\_KIT\_LCD\_KAEF library can be used if wanted)
+  * changed grafic library to TFT_eSPI (WROVER\_KIT\_LCD\_KAEF library can be used if wanted) - I think the display is working much better now
   * enable command 'enable-gpio-wakeup', see below, esp32 board support version 1.0.1 or higher needed!
 
 * 2019-03-20: PS/2 keyboard support (including parenthesis highlighting)
