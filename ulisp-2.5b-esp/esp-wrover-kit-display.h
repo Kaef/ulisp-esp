@@ -17,6 +17,18 @@
 //   copy ulisp-esp/libraries/TFT_eSPI/User_Setup.h to your libraries/TFT_eSPI folder!
 
 // Taken from the example sketch 'TFT_Terminal' from TFT_eSPI library:
+
+// ===============================================================================
+// 2019-03-21 Kaef: remarks
+// I still think this implementation is not good enough now.
+// There are two globals variables xPos and yDraw;
+// the library uses setCursorPos(x, y) and getCursorX(), getCursorY().
+// Why not using the library functions to handle cursor positions?
+// Right now the implementation is somewhat fragile, because local and library
+// cursor positions must stay synchronize to work correctly.
+// Maybe I'm overlooking something, I'll try to fix this soon.
+// ===============================================================================
+
 /*
     The sketch works with the ILI9341 TFT 240x320 display and
     the called up libraries.
