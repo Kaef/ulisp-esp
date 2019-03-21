@@ -4138,6 +4138,11 @@ void deletesymbol (symbol_t name) {
 
 void testescape () {
     if (Serial.read() == '~') error(PSTR("Escape!"));
+    if (keyboard.available()) { ProcessKey(keyboard.read()); }
+    if (tstflag(ESCAPE)) {
+        clrflag(ESCAPE);
+        error(PSTR("Escape!"));
+    }
 }
 
 // Main evaluator
@@ -4513,11 +4518,7 @@ int gserial () {
     }
 #ifdef PS2_KEYBOARD
     while (!Serial.available()  && (!KybdAvailable())) {
-        if (keyboard.available()) {
-            char temp = keyboard.read();
-            //pserial(temp);
-            ProcessKey(temp);
-        }
+        if (keyboard.available()) { ProcessKey(keyboard.read()); }
     }
 #else
     while (!Serial.available());

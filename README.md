@@ -5,17 +5,31 @@ http://www.ulisp.com/show?21T5
 
 
 ## General remarks and changelog:
+* 2019-03-21: changed grafic library to TFT_eSPI (WROVER\_KIT\_LCD\_KAEF library can be used if wanted)
+
+### Installation
+A big thanks to everyone who wrote the below libraries. Please respect the licences of the used libraries.
+* TFT_eSPI: (works with WROVER-KIT-LCD V.4.1 only (ILI9341 chip only unless re-configured)
+  use arduino library manager to install TFT_eSPI library
+  copy ulisp-esp/libraries/TFT_eSPI/User_setup.h to arduino-libraries-folder/TFT_eSPI/User_setup.h (overwrite existing file)
+OR
+* WROVER\_KIT\_LCD\_KAEF: (should work with ILI9341 (tested) and ST7789V (untested))
+  copy ulisp-esp/libraries/WROVER\_KIT\_LCD\_KAEF folder to arduino-libraries-folder (normally under sketchbook/libraries)
+  use arduino library manager to install Adafruit\_GFX library
+  comment out the line "#define USE\_TFT\_eSPI\_LIB in file esp-wrover-kit-display.h (around line 11)
+* PS2Kbd:
+  copy ulisp-esp/libraries/PS2Kbd folder to arduino-libraries-folder or download PS2Kbd library from github
+
 * 2019-03-20: PS/2 keyboard support (including parenthesis highlighting)
 
-  It seems most things are working smoothly, except <break> didn't work, so you can't stop a running uLisp program.
+  It seems keyboard is working smoothly, only US keyboard layout is supported now.
   It is possible to use the serial connection in parallel with the PS/2 keyboard.
-  US keyboard layout supported.
 
 * 2019-03-17: added WROVER\_KIT\_LCD\_KAEF and PS2Kbd libraries
 * 2019-03-16: added support for ESP-WROVER-KIT
 
   * TFT support through WROVER\_KIT\_LCD library (based on scrolltest example)
-  It's just a proof of concept, I'm not satisfied with the solution because the example seems to be written for writing whole lines of text, not single characters. I will investigate after keyboard support is included. Anyway, the display is working... ;-)
+  It's just a proof of concept now, I'm not satisfied with the solution because the example seems to be written for writing whole lines of text, not single characters. I will investigate after keyboard support is included. Anyway, the display is working... ;-)
   I had to patch the WROVER\_KIT\_LCD library to make the lcd and the sd card work in parallel. I renamed the library to WROVER\_KIT\_LCD\_KAEF and included it in the uLisp directory. Please copy the lib to your sketchbook/libraries (Arduino/libraries on windows) folder!
   * SD card support included
   * Keyboard support with PS2Kbd library from https://github.com/michalhol/ps2kbdlib
@@ -59,6 +73,14 @@ http://www.ulisp.com/show?21T5
     0x0002: DEBUG_SDCARD -- debug information for sdcard (closing before deepsleep)
   tbd.
 
+
+### Added functions
+* sleep functions (deepsleep and lightsleep), see next chapter
+* sd-card functions
+  * (ls) -- list directory
+  this function has just side effects, printing the file-list at screen
+  a later version may return a list of files (or list of (list of file, size))
+  
 ### Deepsleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
 Because ESP32 has many wakeup possibilities which can be combined I decided to
 add separate functions to activate the wakeup-sources, similar to the

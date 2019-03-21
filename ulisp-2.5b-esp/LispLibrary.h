@@ -39,7 +39,7 @@ const char LispLibrary[] PROGMEM =
             r)))))"
             
 /* load a program from sd-card, each lisp-function must be written in one line in the file! */
-"(defun loadProgram (filename) \
+"(defun load (filename) \
     (with-sd-card (s filename) \
       (loop \
         (let ((line (read s))) \
