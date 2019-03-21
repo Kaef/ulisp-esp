@@ -10,43 +10,44 @@ http://www.ulisp.com/show?21T5
 ### Installation
 A big thanks to everyone who wrote the below libraries. Please respect the licences of the used libraries.
 * TFT_eSPI: (works with WROVER-KIT-LCD V.4.1 only (ILI9341 chip only unless re-configured)
-  use arduino library manager to install TFT_eSPI library
-  copy ulisp-esp/libraries/TFT_eSPI/User_setup.h to arduino-libraries-folder/TFT_eSPI/User_setup.h (overwrite existing file)
+  * use arduino library manager to install TFT_eSPI library
+  * copy ulisp-esp/libraries/TFT_eSPI/User_setup.h to arduino-libraries-folder/TFT_eSPI/User_setup.h (overwrite existing file)
 OR
 * WROVER\_KIT\_LCD\_KAEF: (should work with ILI9341 (tested) and ST7789V (untested))
-  copy ulisp-esp/libraries/WROVER\_KIT\_LCD\_KAEF folder to arduino-libraries-folder (normally under sketchbook/libraries)
-  use arduino library manager to install Adafruit\_GFX library
-  comment out the line "#define USE\_TFT\_eSPI\_LIB in file esp-wrover-kit-display.h (around line 11)
+  * copy ulisp-esp/libraries/WROVER\_KIT\_LCD\_KAEF folder to arduino-libraries-folder (normally under sketchbook/libraries)
+  * use arduino library manager to install Adafruit\_GFX library
+  * comment out the line "#define USE\_TFT\_eSPI\_LIB in file esp-wrover-kit-display.h (around line 11)
 * PS2Kbd:
-  copy ulisp-esp/libraries/PS2Kbd folder to arduino-libraries-folder or download PS2Kbd library from github
+  * copy ulisp-esp/libraries/PS2Kbd folder to arduino-libraries-folder or download PS2Kbd library from github
 
 ### Changelog:
 * 2019-03-20: PS/2 keyboard support (including parenthesis highlighting)
 
-  It seems keyboard is working smoothly, only US keyboard layout is supported now.
-  It is possible to use the serial connection in parallel with the PS/2 keyboard.
+  * It seems keyboard is working smoothly, only US keyboard layout is supported now.
+  * It is possible to use the serial connection in parallel with the PS/2 keyboard.
 
 * 2019-03-17: added WROVER\_KIT\_LCD\_KAEF and PS2Kbd libraries
 * 2019-03-16: added support for ESP-WROVER-KIT
 
   * TFT support through WROVER\_KIT\_LCD library (based on scrolltest example)
-  It's just a proof of concept now, I'm not satisfied with the solution because the example seems to be written for writing whole lines of text, not single characters. I will investigate after keyboard support is included. Anyway, the display is working... ;-)
-  I had to patch the WROVER\_KIT\_LCD library to make the lcd and the sd card work in parallel. I renamed the library to WROVER\_KIT\_LCD\_KAEF and included it in the uLisp directory. Please copy the lib to your sketchbook/libraries (Arduino/libraries on windows) folder!
+
+  * It's just a proof of concept now, I'm not satisfied with the solution because the example seems to be written for writing whole lines of text, not single characters. I will investigate after keyboard support is included. Anyway, the display is working... ;-)
+  * I had to patch the WROVER\_KIT\_LCD library to make the lcd and the sd card work in parallel. I renamed the library to WROVER\_KIT\_LCD\_KAEF and included it in the uLisp directory. Please copy the lib to your sketchbook/libraries (Arduino/libraries on windows) folder!
   * SD card support included
   * Keyboard support with PS2Kbd library from https://github.com/michalhol/ps2kbdlib
   Most USB-keyboards supports the ps/2 mode (you can buy cheap usb -> ps/2 adapters for that).
   I connect my USB keyboard to the WROVER\_KIT\_LCD:
   ```
   /---------------\ 
-  |   USB Keyb.   |
+  |   USB Keyb.   | (Keyboard connector (keyboard side) shown)
   |___ ___ ___ ___|
   .GND CLK DTA +5V
   ```
-  I cut a usb cable with a USB-A female connector and connect it to the board.
-  use a 4k7 resistor from CLK to 5V and from DTA to 5V
-  connect CLK to GPIO27
-  connect DTA to GPIO26
-  try the simpleRead example from PS2Kbd library (the keyboard should work).
+  * I cut a usb cable with a USB-A female connector and connect it to the board.
+  * use a 4k7 resistor from CLK to 5V and from DTA to 5V
+  * connect CLK to GPIO27
+  * connect DTA to GPIO26
+  * try the simpleRead example from PS2Kbd library (the keyboard should work).
 
 * 2019-02: extend SYMBOLTABLESIZE to 32kBytes, extend the number of long symbols (no restrictions), UNTESTED! (wrote a #warning message in the sources)
 
