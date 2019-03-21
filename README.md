@@ -1,5 +1,5 @@
 # ulisp-esp
-A version of the Lisp programming language for ESP8266 and ESP32-based boards
+A version of the Lisp programming language for ESP32-based boards
 For more information see:
 http://www.ulisp.com/show?21T5
 
@@ -20,6 +20,7 @@ OR
 * PS2Kbd:
   copy ulisp-esp/libraries/PS2Kbd folder to arduino-libraries-folder or download PS2Kbd library from github
 
+### Changelog:
 * 2019-03-20: PS/2 keyboard support (including parenthesis highlighting)
 
   It seems keyboard is working smoothly, only US keyboard layout is supported now.
@@ -35,10 +36,12 @@ OR
   * Keyboard support with PS2Kbd library from https://github.com/michalhol/ps2kbdlib
   Most USB-keyboards supports the ps/2 mode (you can buy cheap usb -> ps/2 adapters for that).
   I connect my USB keyboard to the WROVER\_KIT\_LCD:
+  ```
   /---------------\ 
   |   USB Keyb.   |
   |___ ___ ___ ___|
   .GND CLK DTA +5V
+  ```
   I cut a usb cable with a USB-A female connector and connect it to the board.
   use a 4k7 resistor from CLK to 5V and from DTA to 5V
   connect CLK to GPIO27
