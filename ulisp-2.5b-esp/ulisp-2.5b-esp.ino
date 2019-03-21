@@ -3577,7 +3577,7 @@ object *fn_enableGpioWakeup (object *args, object *env) {
 #ifdef ESP8266
     error(PSTR("Not supported on ESP8266"));
 #elif (defined ESP32)
-    error(PSTR("enable-gpio-wakeup not implemented yet, use enable-ext0-wakeup instead\n       (need to wait for update of ardiuino-idf (> 1.0.0))"));
+    //error(PSTR("enable-gpio-wakeup not implemented yet, use enable-ext0-wakeup instead\n       (need to wait for update of ardiuino-idf (> 1.0.0))"));
 
     int pins[] = {0, 2, 4, 12, 13, 14, 15, 25, 26, 27, 32, 33, 34, 35, 36, 37, 38, 39};
     object *opin = first(args);
@@ -3598,7 +3598,7 @@ object *fn_enableGpioWakeup (object *args, object *env) {
                 // sleepModeConfigured = true;
                 // function does not exists, but Espressif docu says it should be used...
                 // need to wait for arduino-esp32-idf > 1.0.0!!
-                /*
+                /* */
                     if (ESP_OK == esp_sleep_enable_gpio_wakeup()) {
                     sleepModeConfigured = true;
                     return args;

@@ -7,7 +7,6 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 
 ## General remarks and changelog:
-* 2019-03-21: changed grafic library to TFT_eSPI (WROVER\_KIT\_LCD\_KAEF library can be used if wanted)
 
 ### Installation (WROVER-KIT-LCD, support for display & PS/2 keyboard)
 A big thanks to everyone who wrote the below libraries. 
@@ -26,6 +25,11 @@ Please respect the licences of the used libraries.
 
 
 ### Changelog:
+
+* 2019-03-21: 
+  * changed grafic library to TFT_eSPI (WROVER\_KIT\_LCD\_KAEF library can be used if wanted)
+  * enable command 'enable-gpio-wakeup', see below, esp32 board support version 1.0.1 or higher needed!
+
 * 2019-03-20: PS/2 keyboard support (including parenthesis highlighting)
 
   * It seems keyboard is working smoothly, only US keyboard layout is supported now.
@@ -91,7 +95,8 @@ Please respect the licences of the used libraries.
   * (ls) -- list directory
   this function has just side effects, printing the file-list at screen
   a later version may return a list of files (or list of (list of file, size))
-  
+  * (load) and (cat) functions are available through lisp-library, see LispLibrary.h and (list-library), (require)  
+
 ### Deepsleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
 Because ESP32 has many wakeup possibilities which can be combined I decided to
 add separate functions to activate the wakeup-sources, similar to the
@@ -167,8 +172,7 @@ At the beginning I will support the following functions:
   Configure any gpio (same GPIOs as for enable-ext0-wakeup possible) to wakeup the system after lightsleep.
   LEVEL must be 0 or 1.
 
-  **WARNING: Wakeup does not work, because arduino-esp32-idf V. 1.0.0 is too old (esp_sleep_enable_gpio_wakeup() not supported).**
-  If calling this function ulisp returns an error message (I will fix it as soon as a newer arduino-esp32-idf version is released.)
+  **WARNING: arduino-esp32-idf V. 1.0.1 is needed!**
   ```
   (enable-gpio-wakeup 0 0)
   ```
