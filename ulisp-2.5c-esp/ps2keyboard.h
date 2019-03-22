@@ -83,7 +83,7 @@ void ProcessKey (char c) {
     // Highlight parenthesis
     if ((!withinString) && (c == ')')) {
         int search = WritePtr - 1, level = 0;
-        bool withinString = false; // be carful, this overwrites the variable outside!
+        bool withinString = false; // be carful, this shadows the variable outside! -- ok, not a good style ;-)
         while (search >= 0 && parenthesis == -1) {
             c = KybdBuf[search--];
             if (c == '\"') withinString = !withinString;
