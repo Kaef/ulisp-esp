@@ -189,16 +189,22 @@ unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PS
 #define SDCARD_MISO_IO    2 // ESP32-WROVER-KIT V4.1
 #define SDCARD_MOSI_IO   15 // ESP32-WROVER-KIT V4.1
 #define SDCARD_SS_PIN    13 // ESP32-WROVER-KIT V4.1
+// I2C Pins ('(gpio_num_t)-1' to use default pins):
+// 2019-03-22: I think this should work, but it don't...
+const gpio_num_t I2C_SCL = (gpio_num_t) GPIO_NUM_16;
+const gpio_num_t I2C_SDA = (gpio_num_t) GPIO_NUM_17;
+
 #else
+
 #define SDCARD_CLK_IO    18 // Arduino standard: 18, WEMOS ESP32 WOVER: 14
 #define SDCARD_MISO_IO   19 // Arduino standard: 19, WEMOS ESP32 WOVER:  2
 #define SDCARD_MOSI_IO   23 // Arduino standard: 23, WEMOS ESP32 WOVER: 15
 #define SDCARD_SS_PIN     5 // Kaef            :  5, WEMOS ESP32 WOVER: 13
-#endif
-
 // I2C Pins ('(gpio_num_t)-1' to use default pins):
 const gpio_num_t I2C_SCL = (gpio_num_t) - 1; //GPIO_NUM_22; // 22 = WROVER PIN 33 (esp32 wrover default gpio)
 const gpio_num_t I2C_SDA = (gpio_num_t) - 1; //GPIO_NUM_21; // 21 = WROVER PIN 36 (esp32 wrover default gpio)
+#endif
+
 
 bool sleepModeConfigured = false;
 
@@ -1154,7 +1160,7 @@ inline object *cdrx (object *arg) {
 
 void I2Cinit(bool enablePullup) {
     (void) enablePullup;
-    Wire.begin (I2C_SDA, I2C_SCL);
+    Wire.begin(I2C_SDA, I2C_SCL);
 }
 
 inline uint8_t I2Cread() {

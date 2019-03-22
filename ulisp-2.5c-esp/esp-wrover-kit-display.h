@@ -99,7 +99,7 @@ void setupWroverKit() {
     }
     // Change colour for scrolling zone text
     tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR);
-    tft.textsize = 1;
+    //tft.textsize = 1;
     // Setup scroll area
     setupScrollArea(TOP_FIXED_AREA, BOT_FIXED_AREA);
 
