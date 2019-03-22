@@ -60,10 +60,15 @@ void ProcessKey (char c) {
         KybdBuf[WritePtr++] = c;
         KybdBuf[WritePtr] = 0;
     }
-    if (c == 8) {
+    if (c == 8) {                  // Backspace key
         if (WritePtr > 0) {
-            WritePtr--;   // Backspace key
+            WritePtr--;   // drop last entered char
+            // toggle 'withinString' when String terminator is deleted
+            #ifdef ESP_WROVER_KIT
             if (KybdBuf[WritePtr] == '\"') withinString = !withinString;
+            #endif
+            // add nullterminator to KybdBuf
+            KybdBuf[WritePtr] = 0;
         }
         else c = 0;
     }
@@ -73,9 +78,9 @@ void ProcessKey (char c) {
     if (c == 0) yield();            // do nothing
     if (c == 8) removeLastChar();   // Backspace key
     if ((c >= 0x20) && (c <= 0x7F)) displayPrintChar(c);
-
-    // Highlight parenthesis
+    // toggle 'withinString' when String terminator is entered
     if (c == '\"') withinString = !withinString;
+    // Highlight parenthesis
     if ((!withinString) && (c == ')')) {
         int search = WritePtr - 1, level = 0;
         bool withinString = false; // be carful, this overwrites the variable outside!
@@ -94,8 +99,10 @@ void ProcessKey (char c) {
             displayPrintStringBackInverse(&KybdBuf[parenthesis]);
         }
     } else if (c != '\n') showCursor(true);
-#endif
     if ((!withinString && (c == '\n')) || (WritePtr >= KybdBufSize)) {
+#else
+    if(WritePtr >= KybdBufSize) {
+#endif
         KybdAvailableMarker = true;
     }
 }

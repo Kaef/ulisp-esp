@@ -4145,9 +4145,11 @@ void deletesymbol (symbol_t name) {
 
 void testescape () {
     if (Serial.read() == '~') error(PSTR("Escape!"));
+#ifdef PS2_KEYBOARD
     if (keyboard.available()) {
         ProcessKey(keyboard.read());
     }
+#endif
     if (tstflag(ESCAPE)) {
         clrflag(ESCAPE);
         error(PSTR("Escape!"));
