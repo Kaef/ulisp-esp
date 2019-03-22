@@ -1,4 +1,4 @@
-/*  uLisp ESP 2.5b - www.ulisp.com
+/*  uLisp ESP 2.5c - www.ulisp.com
     David Johnson-Davies - www.technoblogy.com - 20th January 2019
 
     Licensed under the MIT license: https://opensource.org/licenses/MIT
@@ -4376,6 +4376,7 @@ void pint (int i, pfun_t pfun) {
     }
 }
 
+/* V25b
 void pmantissa (float f, pfun_t pfun) {
     int sig = floor(log10(f));
     int mul = pow(10, 5 - sig);
@@ -4407,6 +4408,35 @@ void pmantissa (float f, pfun_t pfun) {
         mul = mul / 10;
     }
 }
+*/
+
+void pmantissa (float f, pfun_t pfun) {
+  int sig = floor(log10(f));
+  int mul = pow(10, 5 - sig);
+  int i = round(f * mul);
+  boolean point = false;
+  if (i == 1000000) { i = 100000; sig++; }
+  if (sig < 0) {
+    pfun('0'); pfun('.'); point = true;
+    for (int j=0; j < - sig - 1; j++) pfun('0');
+  }
+  mul = 100000;
+  for (int j=0; j<7; j++) {
+    int d = (int)(i / mul);
+    pfun(d + '0');
+    i = i - d * mul;
+    if (i == 0) { 
+      if (!point) {
+        for (int k=j; k<sig; k++) pfun('0');
+        pfun('.'); pfun('0');
+      }
+      return;
+    }
+    if (j == sig && sig >= 0) { pfun('.'); point = true; }
+    mul = mul / 10;
+  }
+}
+
 
 void pfloat (float f, pfun_t pfun) {
     if (isnan(f)) {
@@ -4796,7 +4826,7 @@ void printFreeHeap () {
 }
 
 void welcomeMessage () {
-    pln(pserial); pfstring(PSTR("uLisp 2.5b (Kaef)"), pserial); pln(pserial);
+    pln(pserial); pfstring(PSTR("uLisp 2.5c (Kaef)"), pserial); pln(pserial);
     //pfstring(PSTR("  forked and extended by Kaef (https://github.com/kaef)"), pserial);  pln(pserial);
     //pfstring(PSTR("(c) by David Johnson-Davies"), pserial); pln(pserial);
     //pfstring(PSTR("    www.technoblogy.com"), pserial); pln(pserial);
@@ -4856,7 +4886,6 @@ void setup () {
     initworkspace();
     initenv();
     initsleep();
-    // Kaef    pfstring(PSTR("uLisp 2.5b "), pserial); pln(pserial);
 }
 
 // Read/Evaluate/Print loop

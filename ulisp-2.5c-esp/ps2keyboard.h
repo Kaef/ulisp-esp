@@ -45,7 +45,8 @@ void setupPS2Keyboard() {
 void ProcessKey (char c) {
 #ifdef ESP_WROVER_KIT
     static int parenthesis = -1;
-
+    static bool withinString = false;
+    
     // Undo previous parenthesis highlight
     if (parenthesis != -1) {
         displayPrintStringBack(&KybdBuf[parenthesis]);
@@ -71,12 +72,15 @@ void ProcessKey (char c) {
     if ((c >= 0x20) && (c <= 0x7F)) displayPrintChar(c);
 
     // Highlight parenthesis
-    if (c == ')') {
+    if (c == '\"') withinString = !withinString;
+    if ((!withinString) && (c == ')')) {
         int search = WritePtr - 1, level = 0;
+        bool withinString = false; // be carful, this overwrites the variable outside!
         while (search >= 0 && parenthesis == -1) {
             c = KybdBuf[search--];
-            if (c == ')') level++;
-            if (c == '(') {
+            if (c == '\"') withinString = !withinString;
+            if ((!withinString) && (c == ')')) level++;
+            if ((!withinString) && (c == '(')) {
                 level--;
                 if (level == 0) {
                     parenthesis = search + 1;
@@ -88,7 +92,7 @@ void ProcessKey (char c) {
         }
     } else if (c != '\n') showCursor(true);
 #endif
-    if ((c == '\n') || (WritePtr >= KybdBufSize)) {
+    if ((!withinString && (c == '\n')) || (WritePtr >= KybdBufSize)) {
         KybdAvailableMarker = true;
     }
 }

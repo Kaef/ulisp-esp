@@ -99,12 +99,12 @@ void setupWroverKit() {
     }
     // Change colour for scrolling zone text
     tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR);
-
+    tft.textsize = 1;
     // Setup scroll area
     setupScrollArea(TOP_FIXED_AREA, BOT_FIXED_AREA);
 
     // Zero the array
-    for (byte i = 0; i < CHARS_PER_LINE; i++) blank[i] = 0;
+    for (byte i = 0; i < CHARS_PER_LINE / tft.textsize; i++) blank[i] = 0;
     tft.setCursor(xPos, yDraw);
 }
 
@@ -117,7 +117,7 @@ void displayPrintChar (const char c) {
     }
     if (c > 31 && c < 128) {
         xPos += tft.drawChar(c, xPos, yDraw, FONT);
-        blank[(CHARS_PER_LINE - 1 + (yStart - TOP_FIXED_AREA) / tft.fontHeight()) % CHARS_PER_LINE] = xPos; // Keep a record of line lengths
+        blank[(CHARS_PER_LINE/tft.textsize - 1 + (yStart - TOP_FIXED_AREA) / tft.fontHeight()) % (CHARS_PER_LINE / tft.textsize)] = xPos; // Keep a record of line lengths
     }
     //change_colour = 1; // Line to indicate buffer is being emptied
     tft.setCursor(xPos, yDraw);
