@@ -8,6 +8,12 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 ## General remarks and changelog:
 
+### Changelog uLisp 2.5c-esp (Kaef)
+
+* floating point fix, to test enter 70.0 -- if 70.0 given back, fix is applied
+* fix a bug with parenthesis highlighting when entering a string
+
+
 ### Installation (WROVER-KIT-LCD, support for display & PS/2 keyboard)
 A big thanks to everyone who wrote the below libraries. 
 * TFT_eSPI: (works with WROVER-KIT-LCD V.4.1 only (ILI9341 chip only unless re-configured)
@@ -24,7 +30,7 @@ OR
 Please respect the licences of the used libraries.
 
 
-### Changelog:
+### Changelog uLisp 2.5b-esp (Kaef):
 
 * 2019-03-21: 
   * changed grafic library to TFT_eSPI (WROVER\_KIT\_LCD\_KAEF library can be used if wanted) - I think the display is working much better now
