@@ -13,9 +13,10 @@ Thanks to David for writing and supporting this fine version of lisp.
 * 2019-03-22
   * floating point fix, to test enter 70.0 -- if 70.0 given back, fix is applied
   * fix a bug with parenthesis highlighting when entering a string
-  * changed I2C Pins from (scl, sda) (22, 21) (ESP32 WROVER defaults) to (16, 17) because default pins are used by the tft; with changed pins i2c interface doesn't work -- why?
-    using i2c-pins (22, 21): i2c interface is working, but display is freezing when using i2c interface (and it doesn't recover)...
-    **TODO: find out why i2c on pins (16, 17) do not work.**
+  * changed I2C Pins from (scl, sda) (22, 21) (ESP32 WROVER defaults) to (16, 17) because default pins are used by the tft
+    * with changed pins i2c interface doesn't work -- why?
+    * using i2c-pins (22, 21): i2c interface is working, but display is freezing when using i2c interface (and it doesn't recover)...
+    * **TODO: find out why i2c on pins (16, 17) do not work.**
 
 ### Installation (WROVER-KIT-LCD, support for display & PS/2 keyboard)
 A big thanks to everyone who wrote the below libraries. 
