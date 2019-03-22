@@ -61,7 +61,10 @@ void ProcessKey (char c) {
         KybdBuf[WritePtr] = 0;
     }
     if (c == 8) {
-        if (WritePtr > 0) WritePtr--;   // Backspace key
+        if (WritePtr > 0) {
+            WritePtr--;   // Backspace key
+            if (KybdBuf[WritePtr] == '\"') withinString = !withinString;
+        }
         else c = 0;
     }
 #ifdef ESP_WROVER_KIT
