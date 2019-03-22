@@ -3329,7 +3329,7 @@ object *fn_pprintall (object *args, object *env) {
         object *pair = first(globals);
         object *var = car(pair);
         object *val = cdr(pair);
-        if (listp(val) && symbolp(car(val)) && car(val)->name == LAMBDA) {
+        if (listp(val) && symbolp(car(val)) && (car(val)->name == LAMBDA)) {
             pln(pserial);
             superprint(cons(symbol(DEFUN), cons(var, cdr(val))), 0, pserial);
             pln(pserial);
@@ -3600,10 +3600,10 @@ object *fn_enableGpioWakeup (object *args, object *env) {
                 // function does not exists, but Espressif docu says it should be used...
                 // need to wait for arduino-esp32-idf > 1.0.0!!
                 /* */
-                    if (ESP_OK == esp_sleep_enable_gpio_wakeup()) {
+                if (ESP_OK == esp_sleep_enable_gpio_wakeup()) {
                     sleepModeConfigured = true;
                     return args;
-                    } else return nil; // */
+                } else return nil; // */
             } else {
                 return nil;
             }
@@ -4139,7 +4139,9 @@ void deletesymbol (symbol_t name) {
 
 void testescape () {
     if (Serial.read() == '~') error(PSTR("Escape!"));
-    if (keyboard.available()) { ProcessKey(keyboard.read()); }
+    if (keyboard.available()) {
+        ProcessKey(keyboard.read());
+    }
     if (tstflag(ESCAPE)) {
         clrflag(ESCAPE);
         error(PSTR("Escape!"));
@@ -4378,30 +4380,36 @@ void pint (int i, pfun_t pfun) {
 }
 
 void pmantissa (float f, pfun_t pfun) {
-  int sig = floor(log10(f));
-  int mul = pow(10, 5 - sig);
-  int i = round(f * mul);
-  boolean point = false;
-  if (i == 1000000) { i = 100000; sig++; }
-  if (sig < 0) {
-    pfun('0'); pfun('.'); point = true;
-    for (int j=0; j < - sig - 1; j++) pfun('0');
-  }
-  mul = 100000;
-  for (int j=0; j<7; j++) {
-    int d = (int)(i / mul);
-    pfun(d + '0');
-    i = i - d * mul;
-    if (i == 0) { 
-      if (!point) {
-        for (int k=j; k<sig; k++) pfun('0');
-        pfun('.'); pfun('0');
-      }
-      return;
+    int sig = floor(log10(f));
+    int mul = pow(10, 5 - sig);
+    int i = round(f * mul);
+    boolean point = false;
+    if (i == 1000000) {
+        i = 100000;
+        sig++;
     }
-    if (j == sig && sig >= 0) { pfun('.'); point = true; }
-    mul = mul / 10;
-  }
+    if (sig < 0) {
+        pfun('0'); pfun('.'); point = true;
+        for (int j = 0; j < - sig - 1; j++) pfun('0');
+    }
+    mul = 100000;
+    for (int j = 0; j < 7; j++) {
+        int d = (int)(i / mul);
+        pfun(d + '0');
+        i = i - d * mul;
+        if (i == 0) {
+            if (!point) {
+                for (int k = j; k < sig; k++) pfun('0');
+                pfun('.'); pfun('0');
+            }
+            return;
+        }
+        if (j == sig && sig >= 0) {
+            pfun('.');
+            point = true;
+        }
+        mul = mul / 10;
+    }
 }
 
 
@@ -4515,7 +4523,9 @@ int gserial () {
     }
 #ifdef PS2_KEYBOARD
     while (!Serial.available()  && (!KybdAvailable())) {
-        if (keyboard.available()) { ProcessKey(keyboard.read()); }
+        if (keyboard.available()) {
+            ProcessKey(keyboard.read());
+        }
     }
 #else
     while (!Serial.available());
