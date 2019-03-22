@@ -11,7 +11,7 @@
 
 // Compile options
 
-// #define resetautorun
+//#define resetautorun
 #define printfreespace
 //#define printfreesymbolspace
 #define serialmonitor
@@ -25,7 +25,7 @@
 #endif
 
 #ifdef sdcardsupport
-#define SD_CARD_DEBUG
+//#define SD_CARD_DEBUG
 #endif
 
 #define ESP_WROVER_KIT
@@ -270,7 +270,7 @@ int builtin (char* n);
 // Kaef PSRAM START
 void setupWorkspace () {
 #if defined ESP32
-    pfstring(PSTR("  initworkspace: "), pserial);
+    pfstring(PSTR("    initworkspace: "), pserial);
     if (psramFound()) {
         pfstring(PSTR("PSRAM, "), pserial);
         WORKSPACESIZE = PSRAMWORKSPACESIZE;
@@ -282,13 +282,14 @@ void setupWorkspace () {
             Workspace = (object*)ps_calloc(WORKSPACESIZE, sizeof(object));
         }
         //pint(WORKSPACESIZE, pserial); pln(pserial);
-        pint(PSRAMWORKSPACESIZE / 1024, pserial); pfstring(PSTR("k - "), pserial);
-        pint(PSRAMWORKSPACESIZE - WORKSPACESIZE, pserial); pfstring(PSTR(" cons"), pserial); pln(pserial);
+        pint(PSRAMWORKSPACESIZE / 1024, pserial); pfstring(PSTR("k (-"), pserial);
+        pint(PSRAMWORKSPACESIZE - WORKSPACESIZE, pserial); pfstring(PSTR(")"), pserial); pln(pserial);
         //pfstring(PSTR(") Workspace cells allocated. "), pserial);
     } else {
         Workspace = (object*)calloc(WORKSPACESIZE, sizeof(object));
         pfstring(PSTR("done"), pserial);
     }
+    pln(pserial);
     if (Workspace == 0) {
         error(PSTR("Allocating workspace failed, entering endless loop..."));
         while (true)
@@ -4376,40 +4377,6 @@ void pint (int i, pfun_t pfun) {
     }
 }
 
-/* V25b
-void pmantissa (float f, pfun_t pfun) {
-    int sig = floor(log10(f));
-    int mul = pow(10, 5 - sig);
-    int i = round(f * mul);
-    boolean point = false;
-    if (i == 1000000) {
-        i = 100000;
-        sig++;
-    }
-    if (sig < 0) {
-        pfun('0'); pfun('.'); point = true;
-        for (int j = 0; j < - sig - 1; j++) pfun('0');
-    }
-    mul = 100000;
-    for (int j = 0; j < 7; j++) {
-        int d = (int)(i / mul);
-        pfun(d + '0');
-        i = i - d * mul;
-        if (i == 0) {
-            if (!point) {
-                pfun('.');
-                pfun('0');
-            } return;
-        }
-        if (j == sig && sig >= 0) {
-            pfun('.');
-            point = true;
-        }
-        mul = mul / 10;
-    }
-}
-*/
-
 void pmantissa (float f, pfun_t pfun) {
   int sig = floor(log10(f));
   int mul = pow(10, 5 - sig);
@@ -4765,7 +4732,6 @@ void listDir (const char * dirname, uint8_t curDirLevel) {
 }
 #endif
 
-#if (defined SD_CARD_DEBUG) && (defined ESP32) /* Kaef */
 void sd_test () {
     mySPIbegin(SDCARD_SS_PIN);
     //pfstring(PSTR("  SDCARD_SS_PIN: "), pserial); pint(SDCARD_SS_PIN, pserial);
@@ -4775,12 +4741,13 @@ void sd_test () {
         return;
     }
     uint32_t cardSize = SD.cardSize() / (1024 * 1024);
-    pfstring(PSTR("  SD Card Size: "), pserial);
+    pfstring(PSTR("    SD Card Size: "), pserial);
     pint(cardSize, pserial); pfstring(PSTR("MB"), pserial); pln(pserial);
 
+#if (defined SD_CARD_DEBUG) && (defined ESP32) /* Kaef */
     listDir("/", 0);
-}
 #endif
+}
 
 // Kaef:
 void printEnabledFeatures () {
@@ -4847,7 +4814,7 @@ void welcomeMessage () {
     pfstring(PSTR(__TIME__), pserial);
     printEnabledFeatures();
     // Kaef: SD Card test
-#if (defined SD_CARD_DEBUG) && (defined ESP32)
+#if (defined ESP32)
     sd_test();
 #endif
     //printFreeHeap();
@@ -4858,7 +4825,7 @@ void welcomeMessage () {
     // give user the chance to press Btn0
     while (millis() < 1000) yield();
 #endif
-    pln(pserial); pln(pserial);
+    pln(pserial);
 }
 // Kaef: END Block
 

@@ -51,8 +51,8 @@ TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
 static const uint8_t FONT = 1;
 
 // yellow on dark blue: color565(0xff, 0xff, 0x00) == 0xFFE0, color565(0, 0, 8) == 8
-static const uint16_t TEXT_COLOR    = 0xFFE0; // TFT_WHITE;
-static const uint16_t TEXT_BG_COLOR = 0x0008; // TFT_BLACK;
+static const uint16_t TEXT_COLOR    = TFT_WHITE;
+static const uint16_t TEXT_BG_COLOR = TFT_BLACK;
 
 
 // The scrolling area must be a integral multiple of fontHeight

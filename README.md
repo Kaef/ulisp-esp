@@ -10,8 +10,9 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 ### Changelog uLisp 2.5c-esp (Kaef)
 
-* floating point fix, to test enter 70.0 -- if 70.0 given back, fix is applied
-* fix a bug with parenthesis highlighting when entering a string
+* 2019-03-22
+  * floating point fix, to test enter 70.0 -- if 70.0 given back, fix is applied
+  * fix a bug with parenthesis highlighting when entering a string
 
 
 ### Installation (WROVER-KIT-LCD, support for display & PS/2 keyboard)
