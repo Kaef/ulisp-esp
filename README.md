@@ -16,7 +16,7 @@ Thanks to David for writing and supporting this fine version of lisp.
   * changed I2C Pins from (scl, sda) (22, 21) (ESP32 WROVER defaults) to (16, 17) because default pins are used by the tft
     * with changed pins i2c interface doesn't work -- why? => GPIO 16, 17 are used for Clk, CS from PSRAM chip!
     * using i2c-pins (22, 21): i2c interface is working, but display is freezing when using i2c interface (and it doesn't recover)...
-    * so I think there are no free GPIOs to use the i2c bus :-(, or did I overlook something?
+    * maybe we can use (12, 4), but this may interfere with the sd-card if used in 2- or 4-bit-mode, **need more tests**
 
 ### Installation (WROVER-KIT-LCD, support for display & PS/2 keyboard)
 A big thanks to everyone who wrote the below libraries. 

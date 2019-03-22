@@ -190,9 +190,9 @@ unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PS
 #define SDCARD_MOSI_IO   15 // ESP32-WROVER-KIT V4.1
 #define SDCARD_SS_PIN    13 // ESP32-WROVER-KIT V4.1
 // I2C Pins ('(gpio_num_t)-1' to use default pins):
-// 2019-03-22: I think this should work, but it don't...
-const gpio_num_t I2C_SCL = (gpio_num_t) GPIO_NUM_16;
-const gpio_num_t I2C_SDA = (gpio_num_t) GPIO_NUM_17;
+// 2019-03-22: I think there are no free GPIOs for i2c anymore (16, 17 are used for PSRAM (Clk, CS)
+const gpio_num_t I2C_SCL = (gpio_num_t) GPIO_NUM_12; // (gpio_num_t) GPIO_NUM_22;
+const gpio_num_t I2C_SDA = (gpio_num_t) GPIO_NUM_4;  // (gpio_num_t) GPIO_NUM_21;
 
 #else
 
