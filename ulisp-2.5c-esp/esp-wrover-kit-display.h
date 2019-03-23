@@ -143,7 +143,7 @@ void removeLastChar() {
     xPos = x; yDraw = y;
 }
 
-void displayPrintStringBack(char *s) {
+void displayPrintStringBack(const char *s) {
     // Serial.print(__FUNCTION__); Serial.print(" '"); Serial.print(s); Serial.println(" '");
     // save current cursor position
     int16_t s_width = tft.textWidth(s, FONT);
@@ -172,7 +172,7 @@ void displayPrintStringBack(char *s) {
     xPos = x; yDraw = y;
 }
 
-void displayPrintStringBackInverse(char *s) {
+void displayPrintStringBackInverse(const char *s) {
     tft.setTextColor(TEXT_BG_COLOR, TEXT_COLOR); // TODO: grab used colors
     displayPrintStringBack(s);
     tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR); // TODO: grab used colors

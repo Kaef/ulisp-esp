@@ -16,7 +16,6 @@ static char KybdBuf[KybdBufSize + 1];
 static bool KybdAvailableMarker = false;
 
 
-
 bool KybdAvailable()  {
     return KybdAvailableMarker;
 }
@@ -37,24 +36,83 @@ bool getNextKeyboardChar(char *ch) {
     return false;
 }
 
+bool isDelimiter(const char *str, const uint16_t currentPos, const bool insideString) {
+    const char *delimiters = "()\"";
+    if (currentPos == 0) {
+        if ((delimiters, str[currentPos]) != 0) return true;
+        else return false;
+    }
+    if (insideString) {
+        // only '"' is a delimiter
+        if ((str[currentPos] == '\"') && (str[currentPos - 1] != '\\')) return true;
+        else return false;
+    }
+    // not inside a string
+    if ((strchr(delimiters, str[currentPos]) != 0) && (str[currentPos - 1] != '\\'))  return true;
+    return false;
+}
+
+uint16_t highlightMatchingParent(const char *str, int16_t currentPos, bool insideString) {
+    if ((str[currentPos] == ')') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) {
+        int level = 0;
+        while (currentPos >= 0) {
+            char c = str[currentPos];
+            if ((c == '\"') && isDelimiter(str, currentPos, insideString)) insideString = !insideString;
+            if ((c == ')') && isDelimiter(str, currentPos, insideString)) level++;
+            if ((c == '(') && isDelimiter(str, currentPos, insideString)) {
+                level--;
+                if (level == 0) {
+                    break;
+                }
+            }
+            currentPos--;
+        }
+        if (currentPos >= 0) {
+            displayPrintStringBackInverse(&str[currentPos]);
+        }
+    } else return -1;
+    return currentPos;
+}
+
+void testIsDelimiter()
+{
+    // Pos:                       11 1
+    //               0   4 5    9 01 23
+    const char *s = "(abc)\"def\\\")\")";
+    //                        (      a      b      c      )      "      d      e      f      \      "      )      "     )
+    const bool inside[14] = {false, false, false, false, false, false, true,  true,  true,  true,  true,  true,  true, false};
+    const bool result[14] = {true,  false, false, false, true,  true,  false, false, false, false, false, false, true, true };
+    for (int i = 0; i < strlen(s); i++) {
+        Serial.print("Test "); Serial.print(i); Serial.print(": ");
+        if (isDelimiter(s,  i, inside[i]) == result[i]) Serial.println("Ok"); else  Serial.println("failed!");
+    }
+}
+
+
 void setupPS2Keyboard() {
     keyboard.begin();
     resetKybdBuf();
+    //testIsDelimiter();
 }
+
 
 void ProcessKey (char c) {
 #ifdef ESP_WROVER_KIT
-    static int parenthesis = -1;
-    static bool withinString = false;
-    
+    static int16_t parenthesis = -1;
+    static bool insideString = false;
+
     // Undo previous parenthesis highlight
-    if (parenthesis != -1) {
+    if (parenthesis >= 0) {
         displayPrintStringBack(&KybdBuf[parenthesis]);
         parenthesis = -1;
     }
 #endif
     // this seems to be not working...
-    if (c == 27) { Serial.println("ESC"); setflag(ESCAPE); return; }    // Escape key
+    if (c == 27) {
+        Serial.println("ESC");    // Escape key
+        setflag(ESCAPE);
+        return;
+    }
 
     if ( (c == '\n') || ((c >= 0x20) && (c <= 0x7F)) ) {
         KybdBuf[WritePtr++] = c;
@@ -63,10 +121,10 @@ void ProcessKey (char c) {
     if (c == 8) {                  // Backspace key
         if (WritePtr > 0) {
             WritePtr--;   // drop last entered char
-            // toggle 'withinString' when String terminator is deleted
-            #ifdef ESP_WROVER_KIT
-            if (KybdBuf[WritePtr] == '\"') withinString = !withinString;
-            #endif
+            // toggle 'insideString' when String terminator is deleted
+#ifdef ESP_WROVER_KIT
+            if ((KybdBuf[WritePtr] == '\"') && isDelimiter(KybdBuf, WritePtr, insideString)) insideString = !insideString;
+#endif
             // add nullterminator to KybdBuf
             KybdBuf[WritePtr] = 0;
         }
@@ -78,30 +136,14 @@ void ProcessKey (char c) {
     if (c == 0) yield();            // do nothing
     if (c == 8) removeLastChar();   // Backspace key
     if ((c >= 0x20) && (c <= 0x7F)) displayPrintChar(c);
-    // toggle 'withinString' when String terminator is entered
-    if (c == '\"') withinString = !withinString;
+    // toggle 'insideString' when String terminator is entered
+    if ((c == '\"') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) insideString = !insideString;
     // Highlight parenthesis
-    if ((!withinString) && (c == ')')) {
-        int search = WritePtr - 1, level = 0;
-        bool withinString = false; // be carful, this shadows the variable outside! -- ok, not a good style ;-)
-        while (search >= 0 && parenthesis == -1) {
-            c = KybdBuf[search--];
-            if (c == '\"') withinString = !withinString;
-            if ((!withinString) && (c == ')')) level++;
-            if ((!withinString) && (c == '(')) {
-                level--;
-                if (level == 0) {
-                    parenthesis = search + 1;
-                }
-            }
-        }
-        if (parenthesis >= 0) {
-            displayPrintStringBackInverse(&KybdBuf[parenthesis]);
-        }
-    } else if (c != '\n') showCursor(true);
-    if ((!withinString && (c == '\n')) || (WritePtr >= KybdBufSize)) {
+    parenthesis = highlightMatchingParent(KybdBuf, WritePtr - 1, insideString);
+    if ((parenthesis == -1) && (c != '\n')) showCursor(true);
+    if ((!insideString && (c == '\n')) || (WritePtr >= KybdBufSize)) {
 #else
-    if(WritePtr >= KybdBufSize) {
+    if (WritePtr >= KybdBufSize) {
 #endif
         KybdAvailableMarker = true;
     }
