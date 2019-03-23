@@ -493,7 +493,7 @@ int compactimage (object **arg) {
         if (marked(obj)) {
             // Kaef: BEG Block
             pfstring(PSTR("."), pserial);
-            if (++count > 60) {
+            if (++count >= 40) {
                 count = 0;
                 pln(pserial);
             }
