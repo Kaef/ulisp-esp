@@ -4534,13 +4534,11 @@ int gserial () {
         return temp;
     }
 #ifdef PS2_KEYBOARD
-    Serial.print("getting data...");
     while (!Serial.available()  && (!KybdAvailable())) {
         if (keyboard.available()) {
             ProcessKey(keyboard.read());
         }
     }
-    Serial.println("evaluating...");
 #else
     while (!Serial.available());
 #endif

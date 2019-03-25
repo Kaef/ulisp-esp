@@ -110,7 +110,6 @@ void ProcessKey (char c) {
         setflag(ESCAPE);
         return;
     }
-    Serial.print(__FUNCTION__); Serial.println(c);
     if ( (c == '\n') || ((c >= 0x20) && (c <= 0x7F)) ) {
         KybdBuf[WritePtr++] = c;
         KybdBuf[WritePtr] = 0;
