@@ -180,7 +180,11 @@ typedef int BitOrder;
 const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024) / 8; /* Kaef PSRAM */
 unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PSRAM */
 #define EEPROMSIZE 8192                         /* Bytes available for EEPROM */
-#define SYMBOLTABLESIZE 32*1024 //512                     /* Bytes */
+#ifdef BOARD_HAS_PSRAM
+#define SYMBOLTABLESIZE 32*1024                 /* Bytes */
+#else
+#define SYMBOLTABLESIZE 512                     /* Bytes */
+#endif
 #define analogWrite(x,y) dacWrite((x),(y))
 
 // the names are a bit misleading: here, the gpio-nums has to be configured, not the pin nums!
@@ -4530,11 +4534,13 @@ int gserial () {
         return temp;
     }
 #ifdef PS2_KEYBOARD
+    Serial.print("getting data...");
     while (!Serial.available()  && (!KybdAvailable())) {
         if (keyboard.available()) {
             ProcessKey(keyboard.read());
         }
     }
+    Serial.println("evaluating...");
 #else
     while (!Serial.available());
 #endif

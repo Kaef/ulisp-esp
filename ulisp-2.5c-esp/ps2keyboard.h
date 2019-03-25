@@ -52,7 +52,7 @@ bool isDelimiter(const char *str, const uint16_t currentPos, const bool insideSt
     return false;
 }
 
-uint16_t highlightMatchingParent(const char *str, int16_t currentPos, bool insideString) {
+uint16_t findMatchingParent(const char *str, int16_t currentPos, bool insideString) {
     if ((str[currentPos] == ')') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) {
         int level = 0;
         while (currentPos >= 0) {
@@ -66,9 +66,6 @@ uint16_t highlightMatchingParent(const char *str, int16_t currentPos, bool insid
                 }
             }
             currentPos--;
-        }
-        if (currentPos >= 0) {
-            displayPrintStringBackInverse(&str[currentPos]);
         }
     } else return -1;
     return currentPos;
@@ -113,7 +110,7 @@ void ProcessKey (char c) {
         setflag(ESCAPE);
         return;
     }
-
+    Serial.print(__FUNCTION__); Serial.println(c);
     if ( (c == '\n') || ((c >= 0x20) && (c <= 0x7F)) ) {
         KybdBuf[WritePtr++] = c;
         KybdBuf[WritePtr] = 0;
@@ -139,7 +136,10 @@ void ProcessKey (char c) {
     // toggle 'insideString' when String terminator is entered
     if ((c == '\"') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) insideString = !insideString;
     // Highlight parenthesis
-    parenthesis = highlightMatchingParent(KybdBuf, WritePtr - 1, insideString);
+    parenthesis = findMatchingParent(KybdBuf, WritePtr - 1, insideString);
+    if ((parenthesis >= 0) && (parenthesis < WritePtr)){
+        displayPrintStringBackInverse(&KybdBuf[parenthesis]);
+    }
     if ((parenthesis == -1) && (c != '\n')) showCursor(true);
     if ((!insideString && (c == '\n')) || (WritePtr >= KybdBufSize)) {
 #else

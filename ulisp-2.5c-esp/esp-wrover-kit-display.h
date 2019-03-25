@@ -66,7 +66,6 @@ static uint16_t yStart = TOP_FIXED_AREA;
 static uint16_t yArea = YMAX - TOP_FIXED_AREA - BOT_FIXED_AREA;
 // The initial y coordinate of the top of the bottom text line
 static uint16_t yDraw;
-
 // Keep track of the drawing x coordinate
 static uint16_t xPos = 0;
 
@@ -138,6 +137,7 @@ void removeLastChar() {
     }
     int16_t x = xPos; 
     int16_t y = yDraw;
+    tft.setCursor(x, y);
     displayPrintChar(' ');
     tft.setCursor(x, y);
     xPos = x; yDraw = y;
