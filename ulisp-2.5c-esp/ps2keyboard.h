@@ -24,6 +24,8 @@ void resetKybdBuf() {
     KybdAvailableMarker = false;
     WritePtr = 0;
     ReadPtr = 0;
+    //scroll(100, TFT_YELLOW); // test scroll() function
+    //scroll(8); // use TEXT_BG_COLOR when no color given
 }
 
 bool getNextKeyboardChar(char *ch) {
@@ -131,7 +133,11 @@ void ProcessKey (char c) {
     showCursor(false);
     if (c == 0) yield();            // do nothing
     if (c == 8) removeLastChar();   // Backspace key
-    if ((c >= 0x20) && (c <= 0x7F)) displayPrintChar(c);
+    
+    // maybe we want to print '\n' during input,
+    // but parenthesis highlightning and backspace key doesn't work with linebreaks now...
+    if ( /*(c == '\n') ||*/ ((c >= 0x20) && (c <= 0x7F)) ) displayPrintChar(c);
+    
     // toggle 'insideString' when String terminator is entered
     if ((c == '\"') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) insideString = !insideString;
     // Highlight parenthesis

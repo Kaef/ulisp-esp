@@ -78,6 +78,7 @@ static boolean selected = 1;
 // We can speed up scrolling of short text lines by just blanking the character we drew
 static const int CHARS_PER_LINE = 40;
 static int blank[CHARS_PER_LINE]; // We keep all the strings pixel lengths to optimise the speed of the top line blanking
+uint16_t yOrigin = 0;
 
 // Prototypes:
 void setupScrollArea(uint16_t tfa, uint16_t bfa);
@@ -207,9 +208,29 @@ int scroll_line() {
         yStart = TOP_FIXED_AREA + (yStart - YMAX + BOT_FIXED_AREA);
     // Now we can scroll the display
     scrollAddress(yStart);
+    yOrigin = yStart; // ?? evtl. + tft.fontHeight() ??
     return yTemp;
 }
+int scroll(uint16_t lines, uint16_t bgColor = TEXT_BG_COLOR) {
+    int yTemp = yStart; // Store the old yStart, this is where we draw the next line
+    // Use the record of line lengths to optimise the rectangle size we need to erase the top line
+    tft.fillRect(0, yStart, tft.width(), lines, bgColor);
 
+    // Change the top of the scroll area
+    yStart += lines;
+    // The value must wrap around as the screen memory is a circular buffer
+    if (yStart >= YMAX - BOT_FIXED_AREA)
+        yStart = TOP_FIXED_AREA + (yStart - YMAX + BOT_FIXED_AREA);
+    // Now we can scroll the display
+    scrollAddress(yStart);
+    yDraw = yStart - tft.fontHeight();
+    if(yDraw <= TOP_FIXED_AREA)
+        yDraw = TOP_FIXED_AREA + (YMAX - BOT_FIXED_AREA - yDraw); // ?? correct ??
+    xPos = 0;
+    tft.setCursor(0, yStart);
+    yOrigin = yStart;
+    return yTemp;
+}
 // ##############################################################################################
 // Setup a portion of the screen for vertical scrolling
 // ##############################################################################################
