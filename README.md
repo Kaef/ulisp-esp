@@ -108,7 +108,8 @@ Please respect the licences of the used libraries.
   this function has just side effects, printing the file-list at screen
   a later version may return a list of files (or list of (list of file, size))
   * (load) and (cat) functions are available through lisp-library, see LispLibrary.h and (list-library), (require)  
-  * scroll (ESP-WROVER-LCD only)
+
+* scroll (ESP-WROVER-LCD only)
   scrolls display in y-direction upwards for given number of lines with given background color (565 format)
   ```
   (scroll 100)      -- scroll 100 lines upwards
