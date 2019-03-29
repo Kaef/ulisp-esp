@@ -4914,6 +4914,9 @@ void repl (object *env) {
             pint(BreakLevel, pserial);
         }
         pfstring(PSTR("> "), pserial);
+#ifdef  ESP_WROVER_KIT
+        storeStartPosition();
+#endif
         object *line = read(gserial);
         if (BreakLevel && line == nil) {
             pln(pserial);

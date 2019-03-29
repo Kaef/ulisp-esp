@@ -10,6 +10,11 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 ### Changelog uLisp 2.5c-esp (Kaef)
 
+* 2019-03-29
+  * expressions can be entered with line-breaks (CR starts a new line)
+  * auto-ident (every parenthesis add two spaces at beginning of line)
+  * drop support for WROVER_KIT_LCD_KAEF library, only TFT_eSPI library supported (ILI9341, WROVER_KIT_LCD V.4.1, library must be reconfigured to support other display driver chips)
+  
 * 2019-03-22
   * floating point fix, to test enter 70.0 -- if 70.0 given back, fix is applied
   * fix a bug with parenthesis highlighting when entering a string

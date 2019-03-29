@@ -1,16 +1,6 @@
 #ifndef ESP_WROVER_KIT_DISPLAY__H
 #define ESP_WROVER_KIT_DISPLAY__H
 
-// The first implementation uses the WROVER_KIT_LCD_KAEF library,
-// whereas for the second try I used the TFT_eSPI library.
-// I think the TFT_eSPI library works a bit smoother than the WROVER_KIT_LCD_KAEF lib.
-// (it may depend on the implementation anyway...)
-
-// --------------------------- USER SETTINGS -----------------------------------------------
-// comment out the next line to use WROVER_KIT_LCD_KAEF library:
-#define USE_TFT_eSPI_LIB
-
-#ifdef USE_TFT_eSPI_LIB
 // -----------------------------------------------------------------------------------------
 // This is the second implementation using TFT_eSPI library
 // Install TFT_eSPI library through arduino library manager and
@@ -65,9 +55,9 @@ static uint16_t yStart = TOP_FIXED_AREA;
 // yArea must be a integral multiple of TEXT_HEIGHT
 static uint16_t yArea = YMAX - TOP_FIXED_AREA - BOT_FIXED_AREA;
 // The initial y coordinate of the top of the bottom text line
-static uint16_t yDraw;
+static int16_t yDraw;
 // Keep track of the drawing x coordinate
-static uint16_t xPos = 0;
+static int16_t xPos = 0;
 
 // A few test variables used during debugging
 static boolean change_colour = 1;
@@ -80,9 +70,12 @@ static const int CHARS_PER_LINE = 40;
 static int blank[CHARS_PER_LINE]; // We keep all the strings pixel lengths to optimise the speed of the top line blanking
 uint16_t yOrigin = 0;
 
+static uint16_t expressionStartPosX = 0;
+static uint16_t expressionStartPosY = 0;
+
 // Prototypes:
 void setupScrollArea(uint16_t tfa, uint16_t bfa);
-int scroll_line();
+int scroll_line(bool fastScrollMode);
 void scrollAddress(uint16_t vsp);
 
 
@@ -113,11 +106,14 @@ void displayPrintChar (const char c) {
     // If it is a CR or we are near end of line then scroll one line
     if ((c == '\r') || (c == '\n') || (xPos > (tft.width() - tft.textWidth(" ", FONT)))) {
         xPos = 0;
-        yDraw = scroll_line(); // It can take 13ms to scroll and blank 16 pixel lines
+        // when CR/LF is entered don't use fastScrollMode (ie. clean whole line):
+        bool fastScrollMode = (c != '\r') && (c != '\n');
+        if ((yDraw + tft.fontHeight()) >= yOrigin) yDraw = scroll_line(fastScrollMode);
+        else yDraw += tft.fontHeight();
     }
     if (c > 31 && c < 128) {
         xPos += tft.drawChar(c, xPos, yDraw, FONT);
-        blank[(CHARS_PER_LINE/tft.textsize - 1 + (yStart - TOP_FIXED_AREA) / tft.fontHeight()) % (CHARS_PER_LINE / tft.textsize)] = xPos; // Keep a record of line lengths
+        blank[(CHARS_PER_LINE / tft.textsize - 1 + (yStart - TOP_FIXED_AREA) / tft.fontHeight()) % (CHARS_PER_LINE / tft.textsize)] = xPos; // Keep a record of line lengths
     }
     //change_colour = 1; // Line to indicate buffer is being emptied
     tft.setCursor(xPos, yDraw);
@@ -129,14 +125,25 @@ void displayPrintCharInverse(const char c) {
     tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR); // TODO: grab used colors
 }
 
+// Redraw current input string (slow, with updated cursor position):
+void displayUpdateString(const char *s) {
+    tft.setCursor(expressionStartPosX, expressionStartPosY);
+    xPos = expressionStartPosX; yDraw = expressionStartPosY;
+    for (int i = 0; i < strlen(s); i++) {
+        displayPrintChar(s[i]);
+    }
+}
+
 void removeLastChar() {
     int16_t s_width = tft.textWidth("_", FONT);
-    xPos -= s_width; 
+    xPos -= s_width;
     if (xPos < 0) {
+        //Serial.print("removeLastChar(): "); Serial.print(xPos); Serial.print(", "); Serial.println(yDraw);
         xPos += tft.width();
         yDraw -= tft.fontHeight();
+        //Serial.print("removeLastChar(): "); Serial.print(xPos); Serial.print(", "); Serial.println(yDraw);
     }
-    int16_t x = xPos; 
+    int16_t x = xPos;
     int16_t y = yDraw;
     tft.setCursor(x, y);
     displayPrintChar(' ');
@@ -144,39 +151,33 @@ void removeLastChar() {
     xPos = x; yDraw = y;
 }
 
-void displayPrintStringBack(const char *s) {
-    // Serial.print(__FUNCTION__); Serial.print(" '"); Serial.print(s); Serial.println(" '");
-    // save current cursor position
-    int16_t s_width = tft.textWidth(s, FONT);
-    // calculate starting cursor position of s
-    int xs = xPos - s_width;
-    int ys = yDraw;
-    while (xs < 0) {
-        xs += tft.width();
-        ys -= tft.fontHeight();
-    }
-    while (ys < 0) {
-        ys += tft.height();
-    }
-
-    // Serial.print(x); Serial.print(" "); Serial.print(y); Serial.print(" ");
-    // Serial.print(xs); Serial.print(" "); Serial.println(ys);
-    // Serial.print(textWidth); Serial.print(" "); Serial.println(textHeight);
-
+// Reprint string (fast, w/o updated cursor position):
+void displayReprintString(char *s, int16_t inverseStartPos) {
     // setCursor to starting position of s
-    tft.setCursor(xs, ys);
-    // print s
-    // save current cursor position:
-    int16_t x = xPos, y = yDraw;
-    tft.print(s);
-    tft.setCursor(x, y);
-    xPos = x; yDraw = y;
+    tft.setCursor(expressionStartPosX, expressionStartPosY);
+    tft.setTextWrap(true, true);
+    if (inverseStartPos >= 0) {
+        // print first part of s:
+        char h = s[inverseStartPos];
+        s[inverseStartPos] = (char)0;
+        //displayPrintString(s);
+        tft.print(s);
+        s[inverseStartPos] = h;
+        // inverse
+        tft.setTextColor(TEXT_BG_COLOR, TEXT_COLOR); // TODO: grab used colors
+        // print rest of s
+        tft.print(&s[inverseStartPos]);
+        // normal
+        tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR); // TODO: grab used colors
+    }
+    else
+        tft.print(s);
 }
 
-void displayPrintStringBackInverse(const char *s) {
-    tft.setTextColor(TEXT_BG_COLOR, TEXT_COLOR); // TODO: grab used colors
-    displayPrintStringBack(s);
-    tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR); // TODO: grab used colors
+void storeStartPosition() {
+    expressionStartPosX = tft.getCursorX();
+    expressionStartPosY = tft.getCursorY();
+    //Serial.print("expressionStartPos: "); Serial.print(expressionStartPosX); Serial.print(", "); Serial.println(expressionStartPosY);
 }
 
 // show Cursor behind text already inserted
@@ -196,10 +197,16 @@ void showCursor(bool show) {
 // ##############################################################################################
 // Call this function to scroll the display one text line
 // ##############################################################################################
-int scroll_line() {
+int scroll_line(bool fastScrollMode) {
+//#define THIS_FUNCTION_TIME_MEASUREMENT
+#ifdef THIS_FUNCTION_TIME_MEASUREMENT
+    unsigned long startTime = micros();
+#endif
     int yTemp = yStart; // Store the old yStart, this is where we draw the next line
     // Use the record of line lengths to optimise the rectangle size we need to erase the top line
-    tft.fillRect(0, yStart, blank[(yStart - TOP_FIXED_AREA) / tft.fontHeight()], tft.fontHeight(), TEXT_BG_COLOR);
+    if (fastScrollMode)
+        tft.fillRect(0, yStart, blank[(yStart - TOP_FIXED_AREA) / tft.fontHeight()], tft.fontHeight(), TEXT_BG_COLOR);
+    else tft.fillRect(0, yStart, tft.width(), tft.fontHeight(), TEXT_BG_COLOR);
 
     // Change the top of the scroll area
     yStart += tft.fontHeight();
@@ -209,7 +216,11 @@ int scroll_line() {
     // Now we can scroll the display
     scrollAddress(yStart);
     yOrigin = yStart; // ?? evtl. + tft.fontHeight() ??
-    return yTemp;
+#ifdef THIS_FUNCTION_TIME_MEASUREMENT
+    startTime = micros() - startTime;
+    Serial.print("scroll line took us: "); Serial.println(startTime);
+#endif
+return yTemp;
 }
 int scroll(uint16_t lines, uint16_t bgColor = TEXT_BG_COLOR) {
     int yTemp = yStart; // Store the old yStart, this is where we draw the next line
@@ -224,7 +235,7 @@ int scroll(uint16_t lines, uint16_t bgColor = TEXT_BG_COLOR) {
     // Now we can scroll the display
     scrollAddress(yStart);
     yDraw = yStart - tft.fontHeight();
-    if(yDraw <= TOP_FIXED_AREA)
+    if (yDraw <= TOP_FIXED_AREA)
         yDraw = TOP_FIXED_AREA + (YMAX - BOT_FIXED_AREA - yDraw); // ?? correct ??
     xPos = 0;
     tft.setCursor(0, yStart);
@@ -253,184 +264,5 @@ void scrollAddress(uint16_t vsp) {
     tft.writedata(vsp >> 8);
     tft.writedata(vsp);
 }
-
-#else
-// -----------------------------------------------------------------------------------------
-// This is the first implementation using WROVER_KIT_LCD_KAEF library:
-//  Kaef, 2019-03:
-
-//  This file capsulate the display routines. Just a few functions (located at
-//  the beginning of this file) are used by uLisp, others are helpers.
-//  This could also be written as a C++ class (and will be, maybe ;-) )
-
-//  I extracted some core routines from the esp-wrover-kit-lcd 'scrolltest' example
-//    to use it with uLisp (marked with ##SCROLLTEST##).
-//  Anyway I did not fully understand how the display controller is working, further
-//    investigation is needed...
-
-//  I had to do a small change to the WROVER_KIT_LCD library to make
-//    tft and sdcard working together (use a different spi object for tft)
-
-//  I think the display functions should be rewritten to get something like a 'canvas'
-//    to write text to or draw graphics on.
-//    It should include auto-scrolling when adding text at the bottom of the display.
-//    A scroll (lines or textlines) function should be included too.
-
-
-#include <Adafruit_GFX.h>    // Core graphics library
-#include "WROVER_KIT_LCD_KAEF.h"
-static WROVER_KIT_LCD_KAEF tft(HSPI);
-
-static const uint16_t TEXT_COLOR    = WROVER_YELLOW;
-static const uint16_t TEXT_BG_COLOR = WROVER_BLACK;
-
-// Prototypes:
-void scrollText(const char* str);
-
-
-void setupWroverKit() {
-    // TFT:
-    tft.begin();
-    tft.setRotation( 0 ); // portrait mode 0 is required
-    tft.setTextColor(TEXT_COLOR);
-    tft.setupScrollArea(0, 0);
-    // clear it
-    tft.fillRect(0, 0, tft.width(), tft.height(), TEXT_BG_COLOR);
-    tft.setCursor(0, 0);
-}
-
-// function used by uLisp to draw a char to the display
-void displayPrintChar (const char c) {
-    char buf[2];
-    memset(buf, 0, sizeof(buf));
-    buf[0] = c;
-    scrollText(buf);
-    yield();
-}
-
-void displayPrintCharInverse(const char c) {
-    tft.setTextColor(TEXT_BG_COLOR, TEXT_COLOR); // TODO: grab used colors
-    displayPrintChar(' ');
-    tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR); // TODO: grab used colors
-}
-
-void removeLastChar() {
-    int16_t x = tft.getCursorX();
-    int16_t y = tft.getCursorY();
-    uint16_t w_tmp, h_tmp, h_dummy;
-    int16_t  x1_tmp, y1_tmp;
-    // TFT_eSPI: int16_t textWidth(const char *string, uint8_t font);
-    tft.getTextBounds("_", x, y, &x1_tmp, &y1_tmp, &w_tmp, &h_tmp);
-    x -= w_tmp; if (x < 0) {
-        x += tft.width();
-        y -= h_tmp;
-    }
-    tft.setCursor(x, y);
-    displayPrintChar(' ');
-    tft.setCursor(x, y);
-}
-
-void displayPrintStringBack(char *s) {
-    // Serial.print(__FUNCTION__); Serial.print(" '"); Serial.print(s); Serial.println(" '");
-    // save current cursor position
-    int x = tft.getCursorX();
-    int y = tft.getCursorY();
-    // calculate length of s
-    uint16_t w_tmp, w_char, h_tmp, h_line;
-    int16_t  x1_tmp, y1_tmp;
-    int16_t textWidth = 0, textHeight = 0;
-    // TFT_eSPI: int16_t textWidth(const char *string, uint8_t font);
-    for (int i = 0; i < strlen(s); i++) {
-        char sh[2]; sh[0] = s[i]; sh[1] = 0;
-        tft.getTextBounds(sh, 0, 0, &x1_tmp, &y1_tmp, &w_tmp, &h_tmp);
-        textWidth += w_tmp;
-        if (h_tmp > textHeight) textHeight = h_tmp;
-    }
-    // calculate starting cursor position of s
-    int xs = x - textWidth;
-    int ys = y;
-    while (xs < 0) {
-        xs += tft.width();
-        ys -= textHeight;
-    }
-    while (ys < 0) {
-        ys += tft.height();
-    }
-
-    // Serial.print(x); Serial.print(" "); Serial.print(y); Serial.print(" ");
-    // Serial.print(xs); Serial.print(" "); Serial.println(ys);
-    // Serial.print(textWidth); Serial.print(" "); Serial.println(textHeight);
-
-    // setCursor to starting position of s
-    tft.setCursor(xs, ys);
-    // print s
-    tft.print(s);
-}
-
-void displayPrintStringBackInverse(char *s) {
-    tft.setTextColor(TEXT_BG_COLOR, TEXT_COLOR); // TODO: grab used colors
-    displayPrintStringBack(s);
-    tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR); // TODO: grab used colors
-}
-
-// show Cursor behind text already inserted
-// (will not work if cursor is inside a text!)
-void showCursor(bool show) {
-    static bool cursorShown = false;
-    if (show == cursorShown) return;
-
-    cursorShown = show;
-    if (show) {
-        displayPrintCharInverse(' ');
-    } else {
-        removeLastChar();
-    }
-}
-
-//  -----------------------------------------------------------------------
-//  ##SCROLLTEST##
-//  some helpers... (based on the WROVER_KIT_LCD scrolltest example):
-//
-void doScroll(int scrollPosY, int lines, int wait) {
-    int yStart = tft.getCursorY();
-    for (int i = 0; i < lines; i++) {
-        yStart++;
-        if (yStart == tft.height()) yStart = 0;
-        tft.scrollTo(yStart);
-        delay(wait);
-    }
-}
-
-void scrollText(const char* str) {
-    static int scrollPosX, scrollPosY = -1;
-    uint16_t w_tmp, h_tmp, h_dummy;
-    int16_t  x1_tmp, y1_tmp;
-
-    scrollPosX = tft.getCursorX();
-    scrollPosY = tft.getCursorY();
-    if (scrollPosY >= tft.height()) {
-        scrollPosY = scrollPosY % tft.height();
-    }
-    // calculate text height:
-    tft.getTextBounds(" ", scrollPosX, scrollPosY, &x1_tmp, &y1_tmp, &w_tmp, &h_tmp);
-    // calculate other parameters:
-    tft.getTextBounds(str, scrollPosX, scrollPosY, &x1_tmp, &y1_tmp, &w_tmp, &h_dummy);
-    if (h_dummy > h_tmp)
-        h_tmp = h_dummy;
-    if (scrollPosX >= tft.width()) {
-        scrollPosX -= tft.width();
-        scrollPosY += h_tmp;
-    }
-    if (scrollPosX == 0) {
-        tft.fillRect(0, scrollPosY, tft.width(), h_tmp, TEXT_BG_COLOR);
-    } else { // fill the horizontal gap
-        tft.fillRect(scrollPosX, scrollPosY, tft.width() - w_tmp, h_tmp, TEXT_BG_COLOR);
-    }
-    tft.setCursor(scrollPosX, scrollPosY);
-    doScroll(scrollPosY, h_tmp, 0); // Scroll lines
-    tft.print(str);
-}
-//  -----------------------------------------------------------------------
-#endif // USE_TFT_eSPI_LIB
 
 #endif // ESP_WROVER_KIT_DISPLAY__H

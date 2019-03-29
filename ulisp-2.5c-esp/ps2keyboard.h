@@ -24,6 +24,7 @@ void resetKybdBuf() {
     KybdAvailableMarker = false;
     WritePtr = 0;
     ReadPtr = 0;
+    memset(KybdBuf, 0, KybdBufSize + 1);
     //scroll(100, TFT_YELLOW); // test scroll() function
     //scroll(8); // use TEXT_BG_COLOR when no color given
 }
@@ -99,10 +100,11 @@ void ProcessKey (char c) {
 #ifdef ESP_WROVER_KIT
     static int16_t parenthesis = -1;
     static bool insideString = false;
+    static int16_t parentLevel = 0;
 
     // Undo previous parenthesis highlight
     if (parenthesis >= 0) {
-        displayPrintStringBack(&KybdBuf[parenthesis]);
+        displayReprintString(KybdBuf, -1);
         parenthesis = -1;
     }
 #endif
@@ -110,15 +112,25 @@ void ProcessKey (char c) {
     if (c == 27) {
         Serial.println("ESC");    // Escape key
         setflag(ESCAPE);
+        // through away current input line:
+        resetKybdBuf();
+        KybdBuf[WritePtr++] = '(';
+        KybdBuf[WritePtr++] = ')';
+        KybdBuf[WritePtr] = (char)0;
+        KybdAvailableMarker = true;
         return;
     }
     if ( (c == '\n') || ((c >= 0x20) && (c <= 0x7F)) ) {
+        if (WritePtr == 0) parentLevel = 0;
         KybdBuf[WritePtr++] = c;
         KybdBuf[WritePtr] = 0;
     }
     if (c == 8) {                  // Backspace key
         if (WritePtr > 0) {
             WritePtr--;   // drop last entered char
+            // correct parentLevel count:
+            if ((KybdBuf[WritePtr] == '(') && isDelimiter(KybdBuf, WritePtr, insideString)) parentLevel--;
+            if ((KybdBuf[WritePtr] == ')') && isDelimiter(KybdBuf, WritePtr, insideString)) parentLevel++;
             // toggle 'insideString' when String terminator is deleted
 #ifdef ESP_WROVER_KIT
             if ((KybdBuf[WritePtr] == '\"') && isDelimiter(KybdBuf, WritePtr, insideString)) insideString = !insideString;
@@ -128,25 +140,36 @@ void ProcessKey (char c) {
         }
         else c = 0;
     }
+    if ((c == '(') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) parentLevel++;
+    if ((c == ')') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) parentLevel--;
+
 #ifdef ESP_WROVER_KIT
     // display current char:
     showCursor(false);
     if (c == 0) yield();            // do nothing
-    if (c == 8) removeLastChar();   // Backspace key
-    
+    if (c == 8) {                   // Backspace key
+        removeLastChar();
+        if (xPos == (tft.width() - tft.textWidth(" ", FONT))) displayUpdateString(KybdBuf);
+    }
+
     // maybe we want to print '\n' during input,
     // but parenthesis highlightning and backspace key doesn't work with linebreaks now...
-    if ( /*(c == '\n') ||*/ ((c >= 0x20) && (c <= 0x7F)) ) displayPrintChar(c);
-    
+    if ( (c == '\n') || ((c >= 0x20) && (c <= 0x7F)) ) displayPrintChar(c);
+    // auto ident:
+    if (c == '\n') {
+        for (int i = 0; i < (parentLevel * 2); i++) {
+            ProcessKey(' ');
+        }
+    }
     // toggle 'insideString' when String terminator is entered
     if ((c == '\"') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) insideString = !insideString;
     // Highlight parenthesis
     parenthesis = findMatchingParent(KybdBuf, WritePtr - 1, insideString);
-    if ((parenthesis >= 0) && (parenthesis < WritePtr)){
-        displayPrintStringBackInverse(&KybdBuf[parenthesis]);
+    if ((parenthesis >= 0) && (parenthesis < WritePtr)) {
+        displayReprintString(KybdBuf, parenthesis);
     }
     if ((parenthesis == -1) && (c != '\n')) showCursor(true);
-    if ((!insideString && (c == '\n')) || (WritePtr >= KybdBufSize)) {
+    if ((!insideString && (c == '\n') && (parentLevel == 0)) || (WritePtr >= KybdBufSize)) {
 #else
     if (WritePtr >= KybdBufSize) {
 #endif
