@@ -225,7 +225,12 @@ int scroll_line(bool fastScrollMode) {
 int scroll(uint16_t lines, uint16_t bgColor = TEXT_BG_COLOR) {
     int yTemp = yStart; // Store the old yStart, this is where we draw the next line
     // Use the record of line lengths to optimise the rectangle size we need to erase the top line
-    tft.fillRect(0, yStart, tft.width(), lines, bgColor);
+    if((yStart + lines) < tft.height())
+        tft.fillRect(0, yStart, tft.width(), lines, bgColor);
+    else {
+        tft.fillRect(0, yStart, tft.width(), tft.height()-1, bgColor);
+        tft.fillRect(0, 0, tft.width(), lines - (tft.height() - yStart), bgColor);
+    }
 
     // Change the top of the scroll area
     yStart += lines;

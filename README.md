@@ -12,17 +12,18 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 * 2019-03-29
   * expressions can be entered with line-breaks (CR starts a new line)
-  * auto-ident (every parenthesis add two spaces at beginning of line)
+  * auto-ident (every parenthesis adds two spaces at beginning of line)
   * drop support for WROVER_KIT_LCD_KAEF library, only TFT_eSPI library supported (ILI9341, WROVER_KIT_LCD V.4.1, library must be reconfigured to support other display driver chips)
-  * use <ESC> during input to throw away current line (same as Ctrl-C in unix shell)
+  * use ESC-key during input to throw away current line (same as Ctrl-C in unix shell)
+  * added command 'scroll lines [bg-color]', see below
   
 * 2019-03-22
   * floating point fix, to test enter 70.0 -- if 70.0 given back, fix is applied
   * fix a bug with parenthesis highlighting when entering a string
-  * changed I2C Pins from (scl, sda) (22, 21) (ESP32 WROVER defaults) to (16, 17) because default pins are used by the tft
-    * with changed pins i2c interface doesn't work -- why? => GPIO 16, 17 are used for Clk, CS from PSRAM chip!
+  * changed I2C Pins from (scl, sda) (22, 21) (ESP32 WROVER defaults) to (12, 4) because default pins are used by the tft
+    * with changed pins to (16, 17) i2c interface doesn't work -- why? => GPIO 16, 17 are used for Clk, CS from PSRAM chip!
     * using i2c-pins (22, 21): i2c interface is working, but display is freezing when using i2c interface (and it doesn't recover)...
-    * maybe we can use (12, 4), but this may interfere with the sd-card if used in 2- or 4-bit-mode, **need more tests**
+    * use (12, 4), but this may interfere with the sd-card if used in 2- or 4-bit-mode, **seems to work, need more tests to proof**
 
 ### Installation (TFT_eSPI, support for display & PS/2 keyboard)
 A big thanks to everyone who wrote the below libraries. 
@@ -107,7 +108,13 @@ Please respect the licences of the used libraries.
   this function has just side effects, printing the file-list at screen
   a later version may return a list of files (or list of (list of file, size))
   * (load) and (cat) functions are available through lisp-library, see LispLibrary.h and (list-library), (require)  
-
+  * scroll (ESP-WROVER-LCD only)
+  scrolls display in y-direction upwards for given number of lines with given background color (565 format)
+  ```
+  (scroll 100)      -- scroll 100 lines upwards
+  (scroll 100 987)  -- scroll 100 lines upwards, fill scrolled room with color 987
+  ```
+  
 ### Deepsleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
 Because ESP32 has many wakeup possibilities which can be combined I decided to
 add separate functions to activate the wakeup-sources, similar to the

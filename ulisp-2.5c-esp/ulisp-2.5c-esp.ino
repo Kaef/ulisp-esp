@@ -123,7 +123,7 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, REQUIRE, LISTLIBRARY,
                 // Kaef: BEG Block
                 RESETREASON, ENABLETIMERWAKEUP, DEEPSLEEPSTART, ISOLATEGPIO, ENABLEEXT0WAKEUP, GETSLEEPWAKEUPCAUSE,
-                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR,
+                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR, SCROLL,
                 // Kaef: END Block
                 ENDFUNCTIONS
               };
@@ -3681,6 +3681,31 @@ object *fn_listDir (object *args, object *env) {
     return nil;
 }
 
+object *fn_scroll (object *args, object *env) {
+    (void) env;
+#ifdef ESP_WROVER_KIT
+    object *bgColor = NULL;
+    int bgC = -1;
+    object *lines = first(args);
+    args = cdr(args);
+    if (args != NULL) bgColor = first(args);
+    if (integerp(lines)) {
+        if (bgColor && integerp(bgColor)) {
+            bgC = integer(bgColor);
+            if ((bgC < 0) || (bgC > 65535))
+                error(PSTR("Color must be between 0 and 65536 (565 decoded)"));
+        } else bgC = -1;
+        int l = integer(lines);
+        if ((l >= 0) && (l < tft.height())) {
+            if (bgC >= 0) scroll(l, bgC); else scroll(l);
+        }
+        else error(PSTR("Argument out of range!"));
+    } else error(PSTR("Argument should be integer!"));
+#else
+    error(PSTR("ESP_WROVER_KIT not defined, function disabled"));
+#endif
+    return tee;
+}
 // Kaef: END (large) Block
 
 // Built-in procedure names - stored in PROGMEM
@@ -3879,6 +3904,7 @@ const char string189[] PROGMEM = "enable-gpio-wakeup";
 const char string190[] PROGMEM = "lightsleep-start";
 const char string191[] PROGMEM = "debug-flags";
 const char string192[] PROGMEM = "ls";
+const char string193[] PROGMEM = "scroll";
 // Kaef: END Block
 
 const tbl_entry_t lookup_table[] PROGMEM = {
@@ -4076,6 +4102,7 @@ const tbl_entry_t lookup_table[] PROGMEM = {
     { string190, fn_lightsleepstart, 0, 0},
     { string191, fn_debugFlags, 0, 1},
     { string192, fn_listDir, 0, 0},
+    { string193, fn_scroll, 1, 2},
     // Kaef: END Block
 };
 
