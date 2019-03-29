@@ -198,7 +198,7 @@ void showCursor(bool show) {
 // Call this function to scroll the display one text line
 // ##############################################################################################
 int scroll_line(bool fastScrollMode) {
-//#define THIS_FUNCTION_TIME_MEASUREMENT
+    //#define THIS_FUNCTION_TIME_MEASUREMENT
 #ifdef THIS_FUNCTION_TIME_MEASUREMENT
     unsigned long startTime = micros();
 #endif
@@ -220,7 +220,7 @@ int scroll_line(bool fastScrollMode) {
     startTime = micros() - startTime;
     Serial.print("scroll line took us: "); Serial.println(startTime);
 #endif
-return yTemp;
+    return yTemp;
 }
 int scroll(uint16_t lines, uint16_t bgColor = TEXT_BG_COLOR) {
     int yTemp = yStart; // Store the old yStart, this is where we draw the next line
