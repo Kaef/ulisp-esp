@@ -24,16 +24,11 @@ Thanks to David for writing and supporting this fine version of lisp.
     * using i2c-pins (22, 21): i2c interface is working, but display is freezing when using i2c interface (and it doesn't recover)...
     * maybe we can use (12, 4), but this may interfere with the sd-card if used in 2- or 4-bit-mode, **need more tests**
 
-### Installation (WROVER-KIT-LCD, support for display & PS/2 keyboard)
+### Installation (TFT_eSPI, support for display & PS/2 keyboard)
 A big thanks to everyone who wrote the below libraries. 
 * TFT_eSPI: (works with WROVER-KIT-LCD V.4.1 only (ILI9341 chip only unless re-configured)
   * use arduino library manager to install TFT_eSPI library
   * copy ulisp-esp/libraries/TFT_eSPI/User_setup.h to arduino-libraries-folder/TFT_eSPI/User_setup.h (overwrite existing file)
-OR
-* -WROVER\_KIT\_LCD\_KAEF: (should work with ILI9341 (tested) and ST7789V (untested))
-  * copy ulisp-esp/libraries/WROVER\_KIT\_LCD\_KAEF folder to arduino-libraries-folder (normally under sketchbook/libraries)
-  * use arduino library manager to install Adafruit\_GFX library
-  * comment out the line "#define USE\_TFT\_eSPI\_LIB in file esp-wrover-kit-display.h (around line 11)-
 * PS2Kbd:
   * copy ulisp-esp/libraries/PS2Kbd folder to arduino-libraries-folder or download PS2Kbd library from github
 
