@@ -16,6 +16,7 @@ Thanks to David for writing and supporting this fine version of lisp.
   * drop support for WROVER_KIT_LCD_KAEF library, only TFT_eSPI library supported (ILI9341, WROVER_KIT_LCD V.4.1, library must be reconfigured to support other display driver chips)
   * use ESC-key during input to throw away current line (same as Ctrl-C in unix shell)
   * added command 'scroll lines [bg-color]', see below
+  * added uLisp function (color565 r g b) to lispLibrary
   
 * 2019-03-22
   * floating point fix, to test enter 70.0 -- if 70.0 given back, fix is applied

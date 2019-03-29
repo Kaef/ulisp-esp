@@ -86,6 +86,9 @@ const char LispLibrary[] PROGMEM =
 
 "(defun ed (l) (setq l (e (eval l))))"
 
+"(defun color565 (r g b) \
+  (logior (ash (logand r #xF8) 8) (ash (logand g #xFC) 3) (ash (logand b #xFF) -3)))"
+
 /*
 "(princ \"globals; \") (princ (globals)) (terpri)"
 "(princ \"reset-reason: \") (princ (reset-reason)) (terpri)"
