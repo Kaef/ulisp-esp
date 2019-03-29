@@ -14,6 +14,7 @@ Thanks to David for writing and supporting this fine version of lisp.
   * expressions can be entered with line-breaks (CR starts a new line)
   * auto-ident (every parenthesis add two spaces at beginning of line)
   * drop support for WROVER_KIT_LCD_KAEF library, only TFT_eSPI library supported (ILI9341, WROVER_KIT_LCD V.4.1, library must be reconfigured to support other display driver chips)
+  * use <ESC> during input to throw away current line (same as Ctrl-C in unix shell)
   
 * 2019-03-22
   * floating point fix, to test enter 70.0 -- if 70.0 given back, fix is applied
@@ -29,10 +30,10 @@ A big thanks to everyone who wrote the below libraries.
   * use arduino library manager to install TFT_eSPI library
   * copy ulisp-esp/libraries/TFT_eSPI/User_setup.h to arduino-libraries-folder/TFT_eSPI/User_setup.h (overwrite existing file)
 OR
-* WROVER\_KIT\_LCD\_KAEF: (should work with ILI9341 (tested) and ST7789V (untested))
+* -WROVER\_KIT\_LCD\_KAEF: (should work with ILI9341 (tested) and ST7789V (untested))
   * copy ulisp-esp/libraries/WROVER\_KIT\_LCD\_KAEF folder to arduino-libraries-folder (normally under sketchbook/libraries)
   * use arduino library manager to install Adafruit\_GFX library
-  * comment out the line "#define USE\_TFT\_eSPI\_LIB in file esp-wrover-kit-display.h (around line 11)
+  * comment out the line "#define USE\_TFT\_eSPI\_LIB in file esp-wrover-kit-display.h (around line 11)-
 * PS2Kbd:
   * copy ulisp-esp/libraries/PS2Kbd folder to arduino-libraries-folder or download PS2Kbd library from github
 
