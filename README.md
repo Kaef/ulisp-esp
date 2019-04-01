@@ -139,22 +139,22 @@ plots a point at position (x y) with color given in 565 format
 
   Here's a simple example:
   ```
-  (defun graftest nil
-  (require 'color565)
-  (scroll 319)
-  (setCursor 45 250)
-  (princ "uLisp2.5c -- plot demo I")
-  (dotimes (x 240)
-    (plot x x (color565 255 0 0))
-    (plot x (- 240 x) (color565 0 255 0)))
-  (let ((color (color565 255 255 0)))
+  (defun graftest ()
+    (require 'color565)
+    (scroll 319)
+    (setCursor 45 250)
+    (princ "uLisp2.5c -- plot demo I")
     (dotimes (x 240)
-      (plot x 1 color)
-      (plot x 240)
-      (plot 0 x)
-      (plot 239 x)))
-  (scroll 10)
-  (setCursor 0 8))
+      (plot x x (color565 255 0 0))
+      (plot x (- 240 x) (color565 0 255 0)))
+    (let ((color (color565 255 255 0)))
+      (dotimes (x 240)
+        (plot x 1 color)
+        (plot x 240)
+        (plot 0 x)
+        (plot 239 x)))
+    (scroll 10)
+    (setCursor 0 8))
   ```
 
 ### Deepsleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
