@@ -3729,8 +3729,8 @@ object *fn_plot (object *args, object *env) {
     if (integerp(x) && integerp(y)) {
         if (color) {
             if (integerp(color)) plot(integer(x), integer(y), integer(color));
-            else plot(integer(x), integer(y), -1);
         }
+        else plot(integer(x), integer(y), -1);
     } else error(PSTR("Argument should be integer!"));
 #else
     error(PSTR("ESP_WROVER_KIT not defined, function disabled"));

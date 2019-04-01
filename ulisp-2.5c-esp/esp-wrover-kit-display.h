@@ -194,7 +194,7 @@ void showCursor(bool show) {
     }
 }
 
-int16_t yTransform(int16_t y) {
+int16_t yTransform (int16_t y) {
     y = yOrigin - y;
     while(y < 0)
         y += tft.height();
@@ -202,7 +202,7 @@ int16_t yTransform(int16_t y) {
     return y;
 }
 
-void setCursor(int16_t x, int16_t y) {
+void setCursor (int16_t x, int16_t y) {
     x = x % tft.width();
     y = yTransform(y);
     tft.setCursor(x, y);
@@ -211,7 +211,7 @@ void setCursor(int16_t x, int16_t y) {
 
 void plot (int16_t x, int16_t y, int32_t color) {
     static int lastColor = TFT_WHITE;
-    if(color != -1) lastColor = color % 65536;
+    if(color != (int32_t)-1) lastColor = color % 65536;
     x = x % tft.width();
     y = yTransform(y);
     tft.drawPixel(x, y, lastColor);

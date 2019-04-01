@@ -121,20 +121,41 @@ Please respect the licences of the used libraries.
   ```
 
 * setCursor (ESP-WROVER-LCD only)
-  sets the cursor to given position
+
+sets the cursor to given position
   Origin (0 0) is the lower left corner.
   ```
   setCursor(100 200) -- sets the current cursor position to x=100, y=200
   ```
 
 * plot (ESP-WROVER-LCD only)
-  plots a point at position (x y) with color given in 565 format
+
+plots a point at position (x y) with color given in 565 format
   if no color given, the last used color will be used (defaults to white)
   ```
   (plot 100 200 #xFFFF) -- plots a white dot at x=100, y=200
   (plot 100 150 (color565 255 0 0)) -- plots a red dot at x=100, y=150 using library function (color565) to set color to red
   ```
 
+  Here's a simple example:
+  ```
+  (defun graftest nil
+  (require 'color565)
+  (scroll 319)
+  (setCursor 45 250)
+  (princ "uLisp2.5c -- plot demo I")
+  (dotimes (x 240)
+    (plot x x (color565 255 0 0))
+    (plot x (- 240 x) (color565 0 255 0)))
+  (let ((color (color565 255 255 0)))
+    (dotimes (x 240)
+      (plot x 1 color)
+      (plot x 240)
+      (plot 0 x)
+      (plot 239 x)))
+  (scroll 10)
+  (setCursor 0 8))
+  ```
 
 ### Deepsleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
 Because ESP32 has many wakeup possibilities which can be combined I decided to
