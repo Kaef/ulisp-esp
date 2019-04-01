@@ -123,7 +123,7 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, REQUIRE, LISTLIBRARY,
                 // Kaef: BEG Block
                 RESETREASON, ENABLETIMERWAKEUP, DEEPSLEEPSTART, ISOLATEGPIO, ENABLEEXT0WAKEUP, GETSLEEPWAKEUPCAUSE,
-                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR, SCROLL,
+                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR, SCROLL, SETCURSOR, PLOT,
                 // Kaef: END Block
                 ENDFUNCTIONS
               };
@@ -3695,17 +3695,49 @@ object *fn_scroll (object *args, object *env) {
             if ((bgC < 0) || (bgC > 65535))
                 error(PSTR("Color must be between 0 and 65536 (565 decoded)"));
         } else bgC = -1;
-        int l = integer(lines);
-        if ((l >= 0) && (l < tft.height())) {
-            if (bgC >= 0) scroll(l, bgC); else scroll(l);
-        }
-        else error(PSTR("Argument out of range!"));
+        int l = integer(lines) % tft.height();
+        if (bgC >= 0) scroll(l, bgC); else scroll(l);
     } else error(PSTR("Argument should be integer!"));
 #else
     error(PSTR("ESP_WROVER_KIT not defined, function disabled"));
 #endif
     return tee;
 }
+
+object *fn_setCursor (object *args, object *env) {
+    (void) env;
+#ifdef ESP_WROVER_KIT
+    object *x = first(args);
+    object *y = second(args);
+    if (integerp(x) && integerp(y)) {
+        setCursor(integer(x), integer(y));
+    } else error(PSTR("Argument should be integer!"));
+#else
+    error(PSTR("ESP_WROVER_KIT not defined, function disabled"));
+#endif
+    return tee;
+}
+
+object *fn_plot (object *args, object *env) {
+    (void) env;
+#ifdef ESP_WROVER_KIT
+    object *x = first(args);
+    object *y = second(args);
+    object *color = NULL;
+    args = cdr(cdr(args));
+    if (args != NULL) color = first(args);
+    if (integerp(x) && integerp(y)) {
+        if (color) {
+            if (integerp(color)) plot(integer(x), integer(y), integer(color));
+            else plot(integer(x), integer(y), -1);
+        }
+    } else error(PSTR("Argument should be integer!"));
+#else
+    error(PSTR("ESP_WROVER_KIT not defined, function disabled"));
+#endif
+    return tee;
+}
+
 // Kaef: END (large) Block
 
 // Built-in procedure names - stored in PROGMEM
@@ -3905,6 +3937,8 @@ const char string190[] PROGMEM = "lightsleep-start";
 const char string191[] PROGMEM = "debug-flags";
 const char string192[] PROGMEM = "ls";
 const char string193[] PROGMEM = "scroll";
+const char string194[] PROGMEM = "setCursor";
+const char string195[] PROGMEM = "plot";
 // Kaef: END Block
 
 const tbl_entry_t lookup_table[] PROGMEM = {
@@ -4103,6 +4137,8 @@ const tbl_entry_t lookup_table[] PROGMEM = {
     { string191, fn_debugFlags, 0, 1},
     { string192, fn_listDir, 0, 0},
     { string193, fn_scroll, 1, 2},
+    { string194, fn_setCursor, 2, 2},
+    { string195, fn_plot, 2, 3},
     // Kaef: END Block
 };
 

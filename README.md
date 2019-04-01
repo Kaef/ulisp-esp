@@ -10,6 +10,9 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 ### Changelog uLisp 2.5c-esp (Kaef)
 
+* 2019-04-01
+  * added (setCursor x y)
+  * added (plot x y [color])
 * 2019-03-29
   * expressions can be entered with line-breaks (CR starts a new line)
   * auto-ident (every parenthesis adds two spaces at beginning of line)
@@ -116,7 +119,23 @@ Please respect the licences of the used libraries.
   (scroll 100)      -- scroll 100 lines upwards
   (scroll 100 987)  -- scroll 100 lines upwards, fill scrolled room with color 987
   ```
-  
+
+* setCursor (ESP-WROVER-LCD only)
+  sets the cursor to given position
+  Origin (0 0) is the lower left corner.
+  ```
+  setCursor(100 200) -- sets the current cursor position to x=100, y=200
+  ```
+
+* plot (ESP-WROVER-LCD only)
+  plots a point at position (x y) with color given in 565 format
+  if no color given, the last used color will be used (defaults to white)
+  ```
+  (plot 100 200 #xFFFF) -- plots a white dot at x=100, y=200
+  (plot 100 150 (color565 255 0 0)) -- plots a red dot at x=100, y=150 using library function (color565) to set color to red
+  ```
+
+
 ### Deepsleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
 Because ESP32 has many wakeup possibilities which can be combined I decided to
 add separate functions to activate the wakeup-sources, similar to the
