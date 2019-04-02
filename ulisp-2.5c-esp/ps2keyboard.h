@@ -121,18 +121,20 @@ void ProcessKey (char c) {
         return;
     }
     if ( (c == '\n') || ((c >= 0x20) && (c <= 0x7F)) ) {
+#ifdef ESP_WROVER_KIT
         if (WritePtr == 0) parentLevel = 0;
+#endif
         KybdBuf[WritePtr++] = c;
         KybdBuf[WritePtr] = 0;
     }
     if (c == 8) {                  // Backspace key
         if (WritePtr > 0) {
             WritePtr--;   // drop last entered char
+#ifdef ESP_WROVER_KIT
             // correct parentLevel count:
             if ((KybdBuf[WritePtr] == '(') && isDelimiter(KybdBuf, WritePtr, insideString)) parentLevel--;
             if ((KybdBuf[WritePtr] == ')') && isDelimiter(KybdBuf, WritePtr, insideString)) parentLevel++;
             // toggle 'insideString' when String terminator is deleted
-#ifdef ESP_WROVER_KIT
             if ((KybdBuf[WritePtr] == '\"') && isDelimiter(KybdBuf, WritePtr, insideString)) insideString = !insideString;
 #endif
             // add nullterminator to KybdBuf
@@ -140,10 +142,10 @@ void ProcessKey (char c) {
         }
         else c = 0;
     }
+#ifdef ESP_WROVER_KIT
     if ((c == '(') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) parentLevel++;
     if ((c == ')') && isDelimiter(KybdBuf, WritePtr - 1, insideString)) parentLevel--;
 
-#ifdef ESP_WROVER_KIT
     // display current char:
     showCursor(false);
     if (c == 0) yield();            // do nothing

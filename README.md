@@ -10,9 +10,11 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 ### Changelog uLisp 2.5c-esp (Kaef)
 
-* 2019-04-01
+* 2019-04-02
   * added (setCursor x y)
   * added (plot x y [color])
+  * added (setTextColor foregroundColor565 backgroundColor565)
+  
 * 2019-03-29
   * expressions can be entered with line-breaks (CR starts a new line)
   * auto-ident (every parenthesis adds two spaces at beginning of line)
@@ -114,6 +116,7 @@ Please respect the licences of the used libraries.
   * (load) and (cat) functions are available through lisp-library, see LispLibrary.h and (list-library), (require)  
 
 * scroll (ESP-WROVER-LCD only)
+
   scrolls display in y-direction upwards for given number of lines with given background color (565 format)
   ```
   (scroll 100)      -- scroll 100 lines upwards
@@ -156,6 +159,15 @@ plots a point at position (x y) with color given in 565 format
     (scroll 10)
     (setCursor 0 8))
   ```
+
+* setTextColor (ESP-WROVER-LCD only)
+
+  Set's text foreground- and background-colors to the given colors.
+  The colors must be given in 565 format, you can use the library function (color565 r g b)
+  ```
+  (setTextColor (color565 255 255 0) (color565 0 0 255)) -- sets the color to yellow on blue
+  ```
+  
 
 ### Deepsleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
 Because ESP32 has many wakeup possibilities which can be combined I decided to

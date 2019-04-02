@@ -123,7 +123,7 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, REQUIRE, LISTLIBRARY,
                 // Kaef: BEG Block
                 RESETREASON, ENABLETIMERWAKEUP, DEEPSLEEPSTART, ISOLATEGPIO, ENABLEEXT0WAKEUP, GETSLEEPWAKEUPCAUSE,
-                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR, SCROLL, SETCURSOR, PLOT,
+                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR, SCROLL, SETCURSOR, PLOT, SETTEXTCOLOR,
                 // Kaef: END Block
                 ENDFUNCTIONS
               };
@@ -3728,9 +3728,23 @@ object *fn_plot (object *args, object *env) {
     if (args != NULL) color = first(args);
     if (integerp(x) && integerp(y)) {
         if (color) {
-            if (integerp(color)) plot(integer(x), integer(y), integer(color));
+            if (integerp(color)) plot(integer(x), integer(y), true, integer(color));
         }
-        else plot(integer(x), integer(y), -1);
+        else plot(integer(x), integer(y));
+    } else error(PSTR("Argument should be integer!"));
+#else
+    error(PSTR("ESP_WROVER_KIT not defined, function disabled"));
+#endif
+    return tee;
+}
+
+object *fn_setTextColor (object *args, object *env) {
+    (void) env;
+#ifdef ESP_WROVER_KIT
+    object *foregroundColor = first(args);
+    object *backgroundColor = second(args);
+    if (integerp(foregroundColor) && integerp(backgroundColor)) {
+        setTextColor(integer(foregroundColor), integer(backgroundColor));
     } else error(PSTR("Argument should be integer!"));
 #else
     error(PSTR("ESP_WROVER_KIT not defined, function disabled"));
@@ -3939,6 +3953,7 @@ const char string192[] PROGMEM = "ls";
 const char string193[] PROGMEM = "scroll";
 const char string194[] PROGMEM = "setCursor";
 const char string195[] PROGMEM = "plot";
+const char string196[] PROGMEM = "setTextColor";
 // Kaef: END Block
 
 const tbl_entry_t lookup_table[] PROGMEM = {
@@ -4139,6 +4154,7 @@ const tbl_entry_t lookup_table[] PROGMEM = {
     { string193, fn_scroll, 1, 2},
     { string194, fn_setCursor, 2, 2},
     { string195, fn_plot, 2, 3},
+    { string196, fn_setTextColor, 2, 2},
     // Kaef: END Block
 };
 

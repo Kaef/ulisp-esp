@@ -41,8 +41,8 @@ TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
 static const uint8_t FONT = 1;
 
 // yellow on dark blue: color565(0xff, 0xff, 0x00) == 0xFFE0, color565(0, 0, 8) == 8
-static const uint16_t TEXT_COLOR    = TFT_WHITE;
-static const uint16_t TEXT_BG_COLOR = TFT_BLACK;
+static uint16_t TEXT_COLOR    = TFT_WHITE;
+static uint16_t TEXT_BG_COLOR = TFT_BLACK;
 
 
 // The scrolling area must be a integral multiple of fontHeight
@@ -164,11 +164,11 @@ void displayReprintString(char *s, int16_t inverseStartPos) {
         tft.print(s);
         s[inverseStartPos] = h;
         // inverse
-        tft.setTextColor(TEXT_BG_COLOR, TEXT_COLOR); // TODO: grab used colors
+        tft.setTextColor(TEXT_BG_COLOR, TEXT_COLOR);
         // print rest of s
         tft.print(&s[inverseStartPos]);
         // normal
-        tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR); // TODO: grab used colors
+        tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR);
     }
     else
         tft.print(s);
@@ -209,12 +209,18 @@ void setCursor (int16_t x, int16_t y) {
     xPos = x; yDraw = y;
 }
 
-void plot (int16_t x, int16_t y, int32_t color) {
+void plot (int16_t x, int16_t y, bool changeColor = false, uint16_t color = (uint16_t)0xFFFF) {
     static int lastColor = TFT_WHITE;
-    if(color != (int32_t)-1) lastColor = color % 65536;
+    if (changeColor) lastColor = color % 65536;
     x = x % tft.width();
     y = yTransform(y);
     tft.drawPixel(x, y, lastColor);
+}
+
+void setTextColor (uint16_t foregroundColor, uint16_t backgroundColor) {
+    TEXT_COLOR    = foregroundColor;
+    TEXT_BG_COLOR = backgroundColor;
+    tft.setTextColor(TEXT_COLOR, TEXT_BG_COLOR);
 }
 
 // ##############################################################################################
