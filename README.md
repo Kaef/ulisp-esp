@@ -70,10 +70,10 @@ Please respect the licences of the used libraries.
   /---------------\ 
   |   USB Keyb.   | (Keyboard connector (keyboard side) shown)
   |___ ___ ___ ___|
-  .GND CLK DTA +5V
+   GND CLK DTA +5V
   ```
   * I cut a usb cable with a USB-A female connector and connect it to the board.
-  * use a 4k7 resistor from CLK to 5V and from DTA to 5V
+  * use two 10k resistors from CLK to 5V and from DTA to 5V
   * connect CLK to GPIO27
   * connect DTA to GPIO26
   * try the simpleRead example from PS2Kbd library (the keyboard should work).
