@@ -56,10 +56,12 @@ Please respect the licences of the used libraries.
 * 2019-03-17: added WROVER\_KIT\_LCD\_KAEF and PS2Kbd libraries
 * 2019-03-16: added support for ESP-WROVER-KIT
 
-  * TFT support through WROVER\_KIT\_LCD library (based on scrolltest example)
+  * OBSOLETE (use TFT_eSPI library now)
 
-  * It's just a proof of concept now, I'm not satisfied with the solution because the example seems to be written for writing whole lines of text, not single characters. I will investigate after keyboard support is included. Anyway, the display is working... ;-)
-  * I had to patch the WROVER\_KIT\_LCD library to make the lcd and the sd card work in parallel. I renamed the library to WROVER\_KIT\_LCD\_KAEF and included it in the uLisp directory. Please copy the lib to your sketchbook/libraries (Arduino/libraries on windows) folder!
+    * TFT support through WROVER\_KIT\_LCD library (based on scrolltest example)
+
+    * It's just a proof of concept now, I'm not satisfied with the solution because the example seems to be written for writing whole lines of text, not single characters. I will investigate after keyboard support is included. Anyway, the display is working... ;-)
+    * I had to patch the WROVER\_KIT\_LCD library to make the lcd and the sd card work in parallel. I renamed the library to WROVER\_KIT\_LCD\_KAEF and included it in the uLisp directory. Please copy the lib to your sketchbook/libraries (Arduino/libraries on windows) folder!
   * SD card support included
   * Keyboard support with PS2Kbd library from https://github.com/michalhol/ps2kbdlib
   Most USB-keyboards supports the ps/2 mode (you can buy cheap usb -> ps/2 adapters for that).
