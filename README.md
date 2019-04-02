@@ -73,6 +73,7 @@ Please respect the licences of the used libraries.
    GND CLK DTA +5V
   ```
   * I cut a usb cable with a USB-A female connector and connect it to the board.
+    Update: using a small pcb with a USB female connector now (2019-04-02)
   * use two 10k resistors from CLK to 5V and from DTA to 5V
   * connect CLK to GPIO27
   * connect DTA to GPIO26
@@ -167,6 +168,7 @@ plots a point at position (x y) with color given in 565 format
   Set's text foreground- and background-colors to the given colors.
   The colors must be given in 565 format, you can use the library function (color565 r g b)
   ```
+  (require 'color565)
   (setTextColor (color565 255 255 0) (color565 0 0 255)) -- sets the color to yellow on blue
   ```
   
