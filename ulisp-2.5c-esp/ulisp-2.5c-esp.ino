@@ -123,7 +123,7 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 WIFISOFTAP, CONNECTED, WIFILOCALIP, WIFICONNECT, REQUIRE, LISTLIBRARY,
                 // Kaef: BEG Block
                 RESETREASON, ENABLETIMERWAKEUP, DEEPSLEEPSTART, ISOLATEGPIO, ENABLEEXT0WAKEUP, GETSLEEPWAKEUPCAUSE,
-                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR, SCROLL, SETCURSOR, PLOT, SETTEXTCOLOR,
+                GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR, RM, RMDIR, MKDIR, SCROLL, SETCURSOR, PLOT, SETTEXTCOLOR,
                 // Kaef: END Block
                 ENDFUNCTIONS
               };
@@ -3678,7 +3678,81 @@ object *fn_listDir (object *args, object *env) {
 #else
     error(PSTR("sdcardsupport not enabled"));
 #endif
-    return nil;
+    return tee;
+}
+
+object *fn_rm (object *args, object *env) {
+    (void) env;
+    bool result = false;
+#ifdef sdcardsupport
+    object *filename = first(args);
+    if (stringp(filename)) {
+                char fn[256];
+        memset(fn, 0, sizeof(fn));
+        fn[0] = '/';
+        cstring(filename, &fn[1], sizeof(fn) - 2);
+        File root = SD.open(fn);
+        if (!root) {
+            pfstring(PSTR("Failed to open directory"), pserial); pln(pserial);
+            return nil;
+        }
+        if (!root.isDirectory()) {
+            fs::FS *fs = &SD;
+            result = fs->remove(fn);
+        }
+    } else error(PSTR("Argument should be string!"));
+#else
+    error(PSTR("sdcardsupport not defined, function disabled"));
+#endif
+    return result ? tee : nil;
+}
+
+object *fn_rmdir (object *args, object *env) {
+    (void) env;
+    bool result = false;
+#ifdef sdcardsupport
+    object *filename = first(args);
+    if (stringp(filename)) {
+        char fn[256];
+        memset(fn, 0, sizeof(fn));
+        fn[0] = '/';
+        cstring(filename, &fn[1], sizeof(fn) - 2);
+        File root = SD.open(fn);
+        if (!root) {
+            pfstring(PSTR("Failed to open directory"), pserial); pln(pserial);
+            return nil;
+        }
+        if (root.isDirectory()) {
+            fs::FS *fs = &SD;
+            result = fs->rmdir(fn);
+        }
+    } else error(PSTR("Argument should be string!"));
+#else
+    error(PSTR("sdcardsupport not defined, function disabled"));
+#endif
+    return result ? tee : nil;
+}
+
+object *fn_mkdir (object *args, object *env) {
+    (void) env;
+    bool result = false;
+#ifdef sdcardsupport
+    object *filename = first(args);
+    if (stringp(filename)) {
+        char fn[256];
+        memset(fn, 0, sizeof(fn));
+        fn[0] = '/';
+        cstring(filename, &fn[1], sizeof(fn) - 2);
+        fs::FS *fs = &SD;
+        if(!fs->exists(fn)) {
+            result = fs->mkdir(fn);
+        }
+        else error(PSTR("already exists!"));
+    } else error(PSTR("Argument should be string!"));
+#else
+    error(PSTR("sdcardsupport not defined, function disabled"));
+#endif
+    return result ? tee : nil;
 }
 
 object *fn_scroll (object *args, object *env) {
@@ -3950,10 +4024,13 @@ const char string189[] PROGMEM = "enable-gpio-wakeup";
 const char string190[] PROGMEM = "lightsleep-start";
 const char string191[] PROGMEM = "debug-flags";
 const char string192[] PROGMEM = "ls";
-const char string193[] PROGMEM = "scroll";
-const char string194[] PROGMEM = "setCursor";
-const char string195[] PROGMEM = "plot";
-const char string196[] PROGMEM = "setTextColor";
+const char string193[] PROGMEM = "rm";
+const char string194[] PROGMEM = "rmdir";
+const char string195[] PROGMEM = "mkdir";
+const char string196[] PROGMEM = "scroll";
+const char string197[] PROGMEM = "setCursor";
+const char string198[] PROGMEM = "plot";
+const char string199[] PROGMEM = "setTextColor";
 // Kaef: END Block
 
 const tbl_entry_t lookup_table[] PROGMEM = {
@@ -4151,10 +4228,13 @@ const tbl_entry_t lookup_table[] PROGMEM = {
     { string190, fn_lightsleepstart, 0, 0},
     { string191, fn_debugFlags, 0, 1},
     { string192, fn_listDir, 0, 0},
-    { string193, fn_scroll, 1, 2},
-    { string194, fn_setCursor, 2, 2},
-    { string195, fn_plot, 2, 3},
-    { string196, fn_setTextColor, 2, 2},
+    { string193, fn_rm, 1, 1},
+    { string194, fn_rmdir, 1, 1},
+    { string195, fn_mkdir, 1, 1},
+    { string196, fn_scroll, 1, 2},
+    { string197, fn_setCursor, 2, 2},
+    { string198, fn_plot, 2, 3},
+    { string199, fn_setTextColor, 2, 2},
     // Kaef: END Block
 };
 

@@ -38,16 +38,29 @@ const char LispLibrary[] PROGMEM =
             (setq c (cons (cons x r) c)) \
             r)))))"
             
-/* load a program from sd-card, each lisp-function must be written in one line in the file! */
+/* load a program from sd-card */
 "(defun load (filename) \
     (with-sd-card (s filename) \
       (loop \
         (let ((line (read s))) \
         (if (null line) \
-          (return) \
-          (progn \
-            (print line) \
-            (eval line)))))))"
+          (return (globals)) \
+          (eval line))))))"
+
+/* save current environment to file on sd-card: */
+"(defun save (fn) \
+  (princ \"Saving:\") \
+  (with-sd-card (str fn 2) \
+                (mapcar (lambda (n) \
+                          (princ \" \") (princ n) \
+                          (princ \"(defvar \" str) \
+                          (princ n str) \
+                          (princ \" '\" str) \
+                          (pprint (eval n) str) \
+                          (princ \")\" str) \
+                          (terpri str) (terpri str)) \
+                        (globals))) \
+   nothing)"
 
 /* cat a program from sd-card: */
 "(defun cat (filename) \

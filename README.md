@@ -10,6 +10,11 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 ### Changelog uLisp 2.5c-esp (Kaef)
 
+* 2019-04-03
+  * added (rm filename)
+  * added (rmdir filename)
+  * added (mkdir filename)
+  
 * 2019-04-02
   * added (setCursor x y)
   * added (plot x y [color])
@@ -116,7 +121,10 @@ Please respect the licences of the used libraries.
   * (ls) -- list directory
   this function has just side effects, printing the file-list at screen
   a later version may return a list of files (or list of (list of file, size))
-  * (load) and (cat) functions are available through lisp-library, see LispLibrary.h and (list-library), (require)  
+  * (rm filename) -- removes a file 'filename' from the sd-card
+  * (rmdir dirname) -- removes a (empty) directory from the sd-card
+  * (mkdir dirname) -- creates a directory 'dirname' on the sd-card
+  * (load), (save)  and (cat) functions are available through lisp-library, see LispLibrary.h and (list-library), (require)  
 
 * scroll (ESP-WROVER-LCD only)
 
