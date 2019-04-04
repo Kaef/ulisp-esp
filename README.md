@@ -10,6 +10,8 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 ### Changelog uLisp 2.5c-esp (Kaef)
 
+* 2019-04-04
+  * added (readPixel x y)
 * 2019-04-03
   * added (rm filename)
   * added (rmdir filename)
@@ -179,6 +181,10 @@ plots a point at position (x y) with color given in 565 format
   (require 'color565)
   (setTextColor (color565 255 255 0) (color565 0 0 255)) -- sets the color to yellow on blue
   ```
+
+* readPixel
+
+  reads the pixel color at position x, y; returns color565
   
 
 ### Deepsleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))

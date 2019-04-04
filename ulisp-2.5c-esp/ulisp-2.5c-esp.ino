@@ -124,6 +124,7 @@ enum function { SYMBOLS, NIL, TEE, NOTHING, AMPREST, LAMBDA, LET, LETSTAR, CLOSU
                 // Kaef: BEG Block
                 RESETREASON, ENABLETIMERWAKEUP, DEEPSLEEPSTART, ISOLATEGPIO, ENABLEEXT0WAKEUP, GETSLEEPWAKEUPCAUSE,
                 GPIOWAKEUP, LIGHTSLEEPSTART, DEBUGFLAGS, LISTDIR, RM, RMDIR, MKDIR, SCROLL, SETCURSOR, PLOT, SETTEXTCOLOR,
+                READPIXEL,
                 // Kaef: END Block
                 ENDFUNCTIONS
               };
@@ -3826,6 +3827,22 @@ object *fn_setTextColor (object *args, object *env) {
     return tee;
 }
 
+object *fn_readPixel (object *args, object *env) {
+    (void) env;
+#ifdef ESP_WROVER_KIT
+    object *xObj = first(args);
+    object *yObj = second(args);
+    if (integerp(xObj) && integerp(yObj)) {
+        int32_t x = integer(xObj) % tft.width();
+        int32_t y = yTransform(integer(yObj) % tft.height());
+        return number(tft.readPixel(x, y));
+    } else error(PSTR("Argument should be integer!"));
+#else
+    error(PSTR("ESP_WROVER_KIT not defined, function disabled"));
+#endif
+    return nil;
+}
+
 // Kaef: END (large) Block
 
 // Built-in procedure names - stored in PROGMEM
@@ -4031,6 +4048,7 @@ const char string196[] PROGMEM = "scroll";
 const char string197[] PROGMEM = "setCursor";
 const char string198[] PROGMEM = "plot";
 const char string199[] PROGMEM = "setTextColor";
+const char string200[] PROGMEM = "readPixel";
 // Kaef: END Block
 
 const tbl_entry_t lookup_table[] PROGMEM = {
@@ -4235,6 +4253,7 @@ const tbl_entry_t lookup_table[] PROGMEM = {
     { string197, fn_setCursor, 2, 2},
     { string198, fn_plot, 2, 3},
     { string199, fn_setTextColor, 2, 2},
+    { string200, fn_readPixel, 2, 2},
     // Kaef: END Block
 };
 
