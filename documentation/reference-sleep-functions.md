@@ -1,26 +1,6 @@
-# ulisp-esp
-A version of the Lisp programming language for ESP32-based boards, supporting 4MB PSRAM.
+# ESP32 sleep functions
 
-For more information see: http://www.ulisp.com/show?21T5
-
-Thanks to David for writing and supporting this fine version of lisp.
-
-
-This file describes the added sleep functions for ESP32 modules.
-uLisp now supports lightsleep and deepsleep modes, bringing down current used by ESP32 modules
-to 5 microamps (deepsleep mode)!
-You can define different wakeup sources: timer-wakeup, ext0-wakeup (GPIO wakeup) and more.
-If the system is alive again you can ask for the wakeup-cause.
-When  using uLisp autorun feature you can restart your application after wakeup and decide what
-to do next depending on the wakeup-cause. This is very useful for sensor applications
-(ie. reading some sensors every N seconds, posting its value to the internet and go to sleep again).
-Another usecase would be to detect when a door is opened (change on GPIO pin) and do whatever you want
-when this event occures.
-
-
-## ESP32 sleep functions
-
-### Sleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
+## Sleep functions (developed in brach 'dev-deepsleep', merged back to master (2018-11-26))
 
 Because ESP32 has many wakeup possibilities which can be combined I decided to
 add separate functions to activate the wakeup-sources, similar to the

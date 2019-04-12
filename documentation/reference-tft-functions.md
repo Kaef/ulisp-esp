@@ -1,6 +1,8 @@
-# TFT functions
+# TFT functions (ESP-WROVER-KIT only)
 
-* scroll (ESP-WROVER-LCD only)
+The following functions may work with other displays too, but this is not tested yet.
+
+* scroll
 
     scrolls display in y-direction upwards for given number of lines with given background color (565 format)
     ```
@@ -8,15 +10,15 @@
     (scroll 100 987)  -- scroll 100 lines upwards, fill scrolled room with color 987
     ```
 
-* setCursor (ESP-WROVER-LCD only)
+* setCursor
 
     sets the cursor to given position
     Origin (0 0) is the lower left corner.
     ```
-    setCursor(100 200) -- sets the current cursor position to x=100, y=200
+    (setCursor 100 200) -- sets the current cursor position to x=100, y=200
     ```
 
-* plot (ESP-WROVER-LCD only)
+* plot
 
     plots a point at position (x y) with color given in 565 format
     if no color given, the last used color will be used (defaults to white)
@@ -45,7 +47,7 @@
     (setCursor 0 8))
     ```
 
-  * setTextColor (ESP-WROVER-LCD only)
+  * setTextColor
 
     Set's text foreground- and background-colors to the given colors.
     The colors must be given in 565 format, you can use the library function (color565 r g b)
