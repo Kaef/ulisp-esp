@@ -12,6 +12,9 @@ const char LispLibrary[] PROGMEM =
 "(defvar *INPUT* 0)"
 "(defvar *OUTPUT* 1)"
 "(defvar *INPUT_PULLUP* 2)"
+"(defvar *SD_READ* 0)"
+"(defvar *SD_WRITE_APPEND* 1)"
+"(defvar *SD_WRITE_OVERWRITE* 2)"
 
 
 /* some code (mostly) copied from ulisp.com: */
@@ -46,7 +49,7 @@ const char LispLibrary[] PROGMEM =
         (if (null line) \
           (return (globals)) \
           (eval line))))))"
-
+         
 /* save current environment to file on sd-card: */
 "(defun save (fn) \
   (princ \"Saving:\") \
@@ -69,7 +72,7 @@ const char LispLibrary[] PROGMEM =
         (let ((line (read-line s))) \
         (if (null line) \
           (return) \
-          (print line))))))"
+          (progn (princ line) (terpri)))))))"
 
 "(defun WriteReadProgram () \
   (print \"Write program\") \

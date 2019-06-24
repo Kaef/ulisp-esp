@@ -17,7 +17,7 @@
 #define printfreespace
 //#define printfreesymbolspace
 #define serialmonitor
-// #define printgcs
+//#define printgcs
 #define sdcardsupport
 // #define lisplibrary
 
@@ -1413,7 +1413,8 @@ void shutdownSDCard() {
     if (debugFlags & DEBUG_SDCARD) {
         pfstring(PSTR("Close sdcard files..."), pserial); pln(pserial); //Serial.flush();
     }
-    SDpfile.close(); SDgfile.close();
+    if(SDpfile) SDpfile.close();
+    if(SDgfile) SDgfile.close();
 #endif
 }
 // Kaef: END Block
