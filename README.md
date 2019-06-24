@@ -39,6 +39,16 @@ Currently (April 2019) there are these descriptions:
 
 ## Changelogs
 
+### Changelog uLisp 2.7-esp (Kaef)
+
+
+* 2019-06-24
+  * update to uLisp 2.7c, all changes made by David applied
+  * from uLisp forum, 'How to pprint all globals': correction pprinting vars applied (values are quoted)
+* 2019-05-22
+  * update to uLisp 2.7, all changes made by David applied to this fork of uLisp
+
+
 ### Changelog uLisp 2.6-esp (Kaef)
 
 * 2019-04-11
