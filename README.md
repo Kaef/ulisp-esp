@@ -47,7 +47,7 @@ Currently (April 2019) there are these descriptions:
 ### Changelog uLisp 2.8-esp (Kaef)
 
 * 2019-08
-** all changes made by David in uLisp-2.8-esp applied
+  * all changes made by David in uLisp-2.8-esp applied
 
 
 ### Changelog uLisp 2.7-esp (Kaef)
