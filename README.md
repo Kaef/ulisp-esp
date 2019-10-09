@@ -39,6 +39,11 @@ Currently (April 2019) there are these descriptions:
 
 ## Changelogs
 
+### Changelog uLisp 2.9-esp (Kaef)
+
+* 2019-10-09: all changes made by David in uLisp-2.9-esp applied
+
+
 ### Changelog uLisp 2.8-esp (Kaef)
 
 * 2019-08
