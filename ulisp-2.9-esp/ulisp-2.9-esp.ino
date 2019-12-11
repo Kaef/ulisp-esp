@@ -12,7 +12,7 @@
 
 // Compile options
 
-#define resetautorun
+//#define resetautorun
 #define printfreespace
 //#define printfreesymbolspace
 #define serialmonitor
@@ -3922,15 +3922,13 @@ object *fn_scroll (object *args, object *env) {
     object *lines = first(args);
     args = cdr(args);
     if (args != NULL) bgColor = first(args);
-    if (checkinteger(SCROLL, lines)) {
-        if (bgColor && checkinteger(SCROLL, bgColor)) {
-            bgC = checkinteger(SCROLL, bgColor);
-            if ((bgC < 0) || (bgC > 65535))
-                error2(SCROLL, PSTR("Color must be between 0 and 65536 (565 decoded)"));
-        } else bgC = -1;
-        int l = checkinteger(SCROLL, lines) % tft.height();
-        if (bgC >= 0) scroll(l, bgC); else scroll(l);
-    } else error2((int)args, PSTR("Argument should be integer!"));
+    if (bgColor && integerp(bgColor)) {
+        bgC = checkinteger(SCROLL, bgColor);
+        if ((bgC < 0) || (bgC > 65535))
+            error2(SCROLL, PSTR("Color must be between 0 and 65536 (565 decoded)"));
+    } else bgC = -1;
+    int l = checkinteger(SCROLL, lines) % tft.height();
+    if (bgC >= 0) scroll(l, bgC); else scroll(l);
 #else
     error2(0, PSTR("ESP_WROVER_KIT not defined, function disabled"));
 #endif
@@ -3942,9 +3940,7 @@ object *fn_setCursor (object *args, object *env) {
 #ifdef ESP_WROVER_KIT
     object *x = first(args);
     object *y = second(args);
-    if (checkinteger(SETCURSOR, x) && checkinteger(SETCURSOR, y)) {
-        setCursor(checkinteger(SETCURSOR, x), checkinteger(SETCURSOR, y));
-    } else error2((int)args, PSTR("Argument should be integer!"));
+    setCursor(checkinteger(SETCURSOR, x), checkinteger(SETCURSOR, y));
 #else
     error2(0, PSTR("ESP_WROVER_KIT not defined, function disabled"));
 #endif
@@ -3952,32 +3948,21 @@ object *fn_setCursor (object *args, object *env) {
 }
 
 object *fn_plot (object *args, object *env) {
-    (void) env;
 #ifdef ESP_WROVER_KIT
     object *x = first(args);
     object *y = second(args);
     object *color = NULL;
-    Serial.println("1");
     args = cdr(cdr(args));
-    Serial.println("2");
     if (args != NULL) color = first(args);
-    Serial.println("3");
-    //if (integerp(x) && integerp(y)) {
-    if (checkinteger(PLOT, x) && (checkinteger(PLOT, y))) {
-        if (color != NULL) {
-            Serial.println("4");
-            if (checkinteger(PLOT, color)) {
-                Serial.println("5");
-                plot(checkinteger(PLOT, x), checkinteger(PLOT, y), true, checkinteger(PLOT, color));
-            }
-        }
-        else plot(checkinteger(PLOT, x), checkinteger(PLOT, y));
-        Serial.println("6");
-    } else error2(PLOT, PSTR("Argument should be integer!"));
+    if (color != NULL) {
+        plot(checkinteger(PLOT, eval(x, env)), checkinteger(PLOT, eval(y, env)), true, checkinteger(PLOT, eval(color, env)));
+    } else {
+        plot(checkinteger(PLOT, eval(x, env)), checkinteger(PLOT, eval(y, env)));
+    }
 #else
+    (void) env;
     error2(PLOT, PSTR("ESP_WROVER_KIT not defined, function disabled"));
 #endif
-    Serial.println("7");
     return tee;
 }
 
@@ -3986,9 +3971,7 @@ object *fn_setTextColor (object *args, object *env) {
 #ifdef ESP_WROVER_KIT
     object *foregroundColor = first(args);
     object *backgroundColor = second(args);
-    if (checkinteger(SETTEXTCOLOR, foregroundColor) && checkinteger(SETTEXTCOLOR, backgroundColor)) {
-        setTextColor(checkinteger(SETTEXTCOLOR, foregroundColor), checkinteger(SETTEXTCOLOR, backgroundColor));
-    } else error2((int)args, PSTR("Argument should be integer!"));
+    setTextColor(checkinteger(SETTEXTCOLOR, foregroundColor), checkinteger(SETTEXTCOLOR, backgroundColor));
 #else
     error2(0, PSTR("ESP_WROVER_KIT not defined, function disabled"));
 #endif
@@ -4000,11 +3983,9 @@ object *fn_readPixel (object *args, object *env) {
 #ifdef ESP_WROVER_KIT
     object *xObj = first(args);
     object *yObj = second(args);
-    if (checkinteger(READPIXEL, xObj) && checkinteger(READPIXEL, yObj)) {
-        int32_t x = checkinteger(READPIXEL, xObj) % tft.width();
-        int32_t y = yTransform(checkinteger(READPIXEL, yObj) % tft.height());
-        return number(tft.readPixel(x, y));
-    } else error2((int)args, PSTR("Argument should be integer!"));
+    int32_t x = checkinteger(READPIXEL, xObj) % tft.width();
+    int32_t y = yTransform(checkinteger(READPIXEL, yObj) % tft.height());
+    return number(tft.readPixel(x, y));
 #else
     error2(0, PSTR("ESP_WROVER_KIT not defined, function disabled"));
 #endif
