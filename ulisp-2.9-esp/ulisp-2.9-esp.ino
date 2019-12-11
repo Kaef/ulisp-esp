@@ -12,7 +12,7 @@
 
 // Compile options
 
-// #define resetautorun
+#define resetautorun
 #define printfreespace
 //#define printfreesymbolspace
 #define serialmonitor
@@ -183,7 +183,7 @@ typedef int BitOrder;
 #define LARGE_WORKSPACE        /* Kaef: large workspace patches */
 const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024) / 8; /* Kaef PSRAM */
 unsigned int WORKSPACESIZE = (8000 - SDSIZE);   /* Cells (8*bytes) */ /* Kaef PSRAM */
-#define EEPROMSIZE 8192                         /* Bytes available for EEPROM */
+#define EEPROMSIZE 4096                         /* Bytes available for EEPROM */
 #ifdef BOARD_HAS_PSRAM
 #define SYMBOLTABLESIZE 32*1024                 /* Bytes */
 #else
@@ -618,11 +618,13 @@ int SDReadInt (File file) {
     return b0 | b1 << 8 | b2 << 16 | b3 << 24;
 }
 #else
-int EpromReadInt (int *addr) {
+/*
+    int EpromReadInt (int *addr) {
     uint8_t b0 = EEPROM.read((*addr)++); uint8_t b1 = EEPROM.read((*addr)++);
     uint8_t b2 = EEPROM.read((*addr)++); uint8_t b3 = EEPROM.read((*addr)++);
     return b0 | b1 << 8 | b2 << 16 | b3 << 24;
-}
+    }
+    //*/
 #endif
 
 unsigned int loadimage (object *arg) {
@@ -3907,7 +3909,7 @@ object *fn_mkdir (object *args, object *env) {
         else error2((int)args, PSTR("already exists!"));
     } else error2((int)args, PSTR("Argument should be string!"));
 #else
-    error(0, PSTR("sdcardsupport not defined, function disabled"));
+    error2(0, PSTR("sdcardsupport not defined, function disabled"));
 #endif
     return result ? tee : nil;
 }
