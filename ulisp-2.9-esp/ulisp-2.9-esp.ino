@@ -11,7 +11,6 @@
 */
 
 // Compile options
-
 //#define resetautorun
 #define printfreespace
 //#define printfreesymbolspace
