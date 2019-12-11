@@ -41,6 +41,7 @@ Currently (April 2019) there are these descriptions:
 
 ### Changelog uLisp 2.9-esp (Kaef)
 
+* 2019-10-09: Bugfix: wrong usage of checkinteger() in my functions (ie. setCursor, plot and other)
 * 2019-10-09: all changes made by David in uLisp-2.9-esp applied
 
 
