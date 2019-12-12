@@ -37,16 +37,23 @@ Currently (April 2019) there are these descriptions:
   * functions added to the Lisp-Library: (load), (save), (cat)
 
 
+
 ## Changelogs
+
+### Changelog ulisp 3.0a-esp (Kaef)
+
+* 2019-12-12: updated to David's uLisp-3.0a
+
 
 ### Changelog uLisp 2.9-esp (Kaef)
 
-* 2019-10-09: Bugfix: wrong usage of checkinteger() in my functions (ie. setCursor, plot and other)
+* 2019-12-11: Bugfix: functions returning an error if argument is zero: (scroll), (setCursor), (plot), (setTextColor), (readPixel)
 * 2019-10-09: all changes made by David in uLisp-2.9-esp applied
 
 
 ### Changelog uLisp 2.8-esp (Kaef)
 
+* 2019-12-12: Bugfix: functions returning an error if argument is zero: (scroll), (setCursor), (plot), (setTextColor), (readPixel)
 * 2019-08
   * all changes made by David in uLisp-2.8-esp applied
 
