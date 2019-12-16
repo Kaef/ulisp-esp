@@ -42,6 +42,13 @@ Currently (April 2019) there are these descriptions:
 
 ### Changelog ulisp 3.0a-esp (Kaef)
 
+* 2019-12.16: testing support for FabGl (VGA output & PS/2 keyboard library)
+              NOT FULLY TESTED!
+              works basically
+              not tested in combination with LARGE_WORKSPACE yet
+* 2019-12-13: dropped ESP8266 support, because this complicates the code and
+              all additions made are for esp32 only.
+              Pleas use David's uLisp version for ESP8266.
 * 2019-12-12: updated to David's uLisp-3.0a
 
 
