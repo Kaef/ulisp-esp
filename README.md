@@ -10,31 +10,29 @@ Thanks to David for writing and supporting this fine version of lisp.
 
 I decided to split the documentation to make it easier to find the informations you need.
 Please look at the documentation folder to get more informations.
-Currently (April 2019) there are these descriptions:
-* ESP-WROVER-KIT setup.md
+Currently (April 2019) there are the following descriptions:
+* *'ESP-WROVER-KIT setup.md'*
   describes the steps needed to get the ESP-WROVER-KIT with TFT and PS/2 keyboard
   support up and running. A small hardware modification is needed to be able using
   the TFT and the SD-Card in parallel.
 
-* reference-sleep-functions.md
-  a description of the added light- and deepsleep functions.
+* *'reference-sleep-functions.md'*
+  a description of the added light- and deepsleep uLisp functions.
   You can enable wakeup resources as you need for your project.
   
-* reference-tft-functions.md
-  a description of functions depending the tft:
+* *'reference-tft-functions.md'* -- a description of uLisp functions depending the tft:
   * set foreground and background text colors
   * plot a pixel
   * get a pixel's color
   * scroll the display
   ...
 
-* reference-sd-card-functions.md
-  added sd-card-functions:
+* *'reference-sd-card-functions.md'* -- uLisp functions depending on sd-card usage:
   * (ls)    -- list directory (and all subdirectories)
   * (mkdir) -- create a new directory
   * (rmdir) -- remove an empty directory
   * (rm)    -- remove a file
-  * functions added to the Lisp-Library: (load), (save), (cat)
+  * functions added to the Lisp-Library (available with uLisp's (require) command): (load), (save), (cat)
 
 
 
@@ -43,12 +41,11 @@ Currently (April 2019) there are these descriptions:
 ### Changelog ulisp 3.0a-esp (Kaef)
 
 * 2019-12.16: testing support for FabGl (VGA output & PS/2 keyboard library)
-  * NOT FULLY TESTED!
-  * seems to work basically
   * not tested in combination with LARGE_WORKSPACE yet
-  * backspace did not work
-* 2019-12-13: dropped ESP8266 support, because this complicates the code and
-              all additions made are for esp32 only.
+  * sdcard-support not tested
+  * backspace did not work in uLisp repl (but this should be possible writing a new repl in uLisp)
+  * escape sequences for terminal modifications not tested (ie. setting text and background color, moving cursor etc,)
+* 2019-12-13: dropped ESP8266 support, because this makes the code complexer and I did not add any functions for the esp8266 
               Please use David's uLisp version for ESP8266.
 * 2019-12-12: updated to David's uLisp-3.0a
 
@@ -62,52 +59,49 @@ Currently (April 2019) there are these descriptions:
 ### Changelog uLisp 2.8-esp (Kaef)
 
 * 2019-12-12: Bugfix: functions returning an error if argument is zero: (scroll), (setCursor), (plot), (setTextColor), (readPixel)
-* 2019-08
-  * all changes made by David in uLisp-2.8-esp applied
+* 2019-08: all changes made by David in uLisp-2.8-esp applied
 
 
 ### Changelog uLisp 2.7-esp (Kaef)
 
-* 2019-06-24
+* 2019-06-24:
   * update to uLisp 2.7c, all changes made by David applied
   * from uLisp forum, 'How to pprint all globals': correction pprinting vars applied (values are quoted)
-* 2019-05-22
-  * update to uLisp 2.7, all changes made by David applied to this fork of uLisp
+* 2019-05-22: update to uLisp 2.7, all changes made by David applied to this fork of uLisp
 
 
 ### Changelog uLisp 2.6-esp (Kaef)
 
-* 2019-04-11
-  * update to uLisp 2.6, all changes made by David applied
-  (all functions added to uLisp-2.5c (Kaef) are still available)
-  * small change in I2Cstart(), I2Crestart() to better support i2c multi-master setups
+* 2019-04-11:
+  * update to uLisp 2.6, all changes made by David applied (all functions added to uLisp-2.5c (Kaef) are still available)
+  * small change in I2Cstart(), I2Crestart() to better support i2c multi-master setups (untested)
   
 
 ### Changelog uLisp 2.5c-esp (Kaef)
 
-* 2019-04-04
+* 2019-04-04:
   * added (readPixel x y)
-* 2019-04-03
+* 2019-04-03:
   * added (rm filename)
   * added (rmdir filename)
   * added (mkdir filename)
   
-* 2019-04-02
+* 2019-04-02: ESP\_WROVER\_KIT
   * added (setCursor x y)
   * added (plot x y [color])
   * added (setTextColor foregroundColor565 backgroundColor565)
   
-* 2019-03-29
+* 2019-03-29: ESP\_WROVER\_KIT
   * expressions can be entered with line-breaks (CR starts a new line)
   * auto-ident (every parenthesis adds two spaces at beginning of line)
-  * drop support for WROVER_KIT_LCD_KAEF library, only TFT_eSPI library supported (ILI9341, WROVER_KIT_LCD V.4.1, library must be reconfigured to support other display driver chips)
+  * drop support for WROVER\_KIT\_LCD\_KAEF library, only TFT\_eSPI library supported (ILI9341, WROVER\_KIT\_LCD V.4.1, library must be reconfigured to support other display driver chips)
   * use ESC-key during input to throw away current line (same as Ctrl-C in unix shell)
-  * added command 'scroll lines [bg-color]', see below
+  * added command (scroll lines [bg-color]), see 'reference-tft-functions.md'
   * added uLisp function (color565 r g b) to lispLibrary
   
-* 2019-03-22
+* 2019-03-22:
   * floating point fix, to test enter 70.0 -- if 70.0 given back, fix is applied
-  * fix a bug with parenthesis highlighting when entering a string
+  * [ESP\_WROVER\_KIT]: fix a bug with parenthesis highlighting when entering a string
   * changed I2C Pins from (scl, sda) (22, 21) (ESP32 WROVER defaults) to (12, 4) because default pins are used by the tft
     * with changed pins to (16, 17) i2c interface doesn't work -- why? => GPIO 16, 17 are used for Clk, CS from PSRAM chip!
     * using i2c-pins (22, 21): i2c interface is working, but display is freezing when using i2c interface (and it doesn't recover)...
@@ -118,11 +112,11 @@ Currently (April 2019) there are these descriptions:
 
 * 2019-03-21: 
   * changed grafic library to TFT_eSPI (WROVER\_KIT\_LCD\_KAEF library can be used if wanted) - I think the display is working much better now
-  * enable command 'enable-gpio-wakeup', see below, esp32 board support version 1.0.1 or higher needed!
+  * enabled command (enable-gpio-wakeup), see 'reference-sleep-functions.md' (esp32 board support version 1.0.1 or higher needed!)
 
 * 2019-03-20: PS/2 keyboard support (including parenthesis highlighting)
 
-  * It seems keyboard is working smoothly, only US keyboard layout is supported now.
+  * I think the keyboard is working smoothly now, only US keyboard layout is supported
   * It is possible to use the serial connection in parallel with the PS/2 keyboard.
 
 * 2019-03-17: added WROVER\_KIT\_LCD\_KAEF and PS2Kbd libraries
@@ -149,12 +143,12 @@ Currently (April 2019) there are these descriptions:
   * use two 10k resistors from CLK to 5V and from DTA to 5V
   * connect CLK to GPIO27
   * connect DTA to GPIO26
-  * try the simpleRead example from PS2Kbd library (the keyboard should work).
+  * try the simpleRead example from PS2Kbd library (the keyboard should work)
 
-* 2019-02: extend SYMBOLTABLESIZE to 32kBytes, extend the number of long symbols (no restrictions), UNTESTED! (wrote a #warning message in the sources)
+* 2019-02: LARGE\_WORKSPACE flag set:
+  * extend SYMBOLTABLESIZE to 32kBytes, extend the number of long symbols (no restrictions), UNTESTED! (wrote a #warning message in the sources)
 
-* 2019-02: added (ls) command to list the files from the sd-card (see below: Chap. Added functions)
-
+* 2019-02: added (ls) command to list the files from the sd-card (see 'reference-sd-card-functions.md')
 * 2019-01-27: moved ulisp-esp V. 2.5 to subdirectory ulisp-2.5-esp, renamed ulisp-esp.ino to ulisp-2.5-esp.ino
 * 2019-01-27: adding new ulisp-features done by David becomes a heavy task I decided to work another way: I'll use David's 'official' ulisp version and redo my esp32 patches (PSRAM support, esp32-deepsleep, sdcard-pin-configuration)
 * 2019-01-27: this version of ulisp only supports esp32 boards, esp8266 is not tested
@@ -169,15 +163,14 @@ Currently (April 2019) there are these descriptions:
 * 2018-12-03: latest ulisp-2.4 version (ea23ecc3e795f2b0de135c5cc10c3849f755eeb0) -- next commit will include changes made by David in ulisp-2.5-esp version
 * 2018-11-26: merged branch dev-deepsleep to master -- removed dev-deepsleep so every deepsleep-addition is in master branch now
 * usage of the 4 MByte PSRAM on ESP-WROVER-32 modules
-  (other boards with or without PSRAM (only 4MB supported now, but this is easy to extend) should work too)
-* sd-card support: possibility to define sd-card pins (SPI pins used for sd-card)
-* new lisp function: reset-reason
-* Deepsleep functions (see below)
-* (sleep) uses lightsleep, therefore program will continue after sleep (this is the expected behaviour for sleep;
-  restarting the system (as deepsleep does) is very unusual).
+  (other boards with or without PSRAM (only 4MB supported) should work too)
+* sd-card support: possibility to define sd-card pins (SPI pins used for the sd-card) in uLisp without changing arduino defaults
+* new lisp function: (reset-reason)
+* Deepsleep functions (see 'reference-sleep-functions.md')
+* (sleep) uses lightsleep, therefore program will continue after sleep
 * added (debug-flags NUM) to enable/disable debug output
   supported flags:
-    0x0001: DEBUG_SLEEP  -- debug information for sleep, lightsleep and deepsleep functions
-    0x0002: DEBUG_SDCARD -- debug information for sdcard (closing before deepsleep)
-  tbd.
+    0x0001: DEBUG\_SLEEP  -- debug information for sleep, lightsleep and deepsleep functions
+    0x0002: DEBUG\_SDCARD -- debug information for sdcard (closing before deepsleep)
+  
 
