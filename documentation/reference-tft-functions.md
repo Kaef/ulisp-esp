@@ -5,6 +5,8 @@ The following functions may work with other displays too, but this is not tested
 * (scroll lines [background color565])
 
     scrolls display in y-direction upwards for given number of lines with given background color (565 format)
+
+    lines must be a positive integer value; if lines is larger than the screen height the remainder of (/ lines screenHeight) will be used
     ```
     (scroll 100)      -- scroll 100 lines upwards
     (scroll 100 987)  -- scroll 100 lines upwards, fill scrolled room with color 987
@@ -13,6 +15,7 @@ The following functions may work with other displays too, but this is not tested
 * (setCursor x y)
 
     sets the cursor to given position
+
     Origin (0 0) is the lower left corner.
     ```
     (setCursor 100 200) -- sets the current cursor position to x=100, y=200
@@ -21,6 +24,7 @@ The following functions may work with other displays too, but this is not tested
 * (plot x y [color565])
 
     plots a point at position (x y) with color given in 565 format
+
     if no color given, the last used color will be used (defaults to white)
     ```
     (plot 100 200 #xFFFF) -- plots a white dot at x=100, y=200
@@ -50,6 +54,7 @@ The following functions may work with other displays too, but this is not tested
   * (setTextColor forground-color565 [background-color565])
 
     Set's text foreground- and background-colors to the given colors.
+    
     The colors must be given in 565 format, you can use the library function (color565 r g b)
     ```
     (require 'color565)
