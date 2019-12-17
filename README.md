@@ -11,23 +11,23 @@ Thanks to David for writing and supporting this fine version of lisp.
 I decided to split the documentation to make it easier to find the informations you need.
 Please look at the documentation folder to get more informations.
 Currently (April 2019) there are the following descriptions:
-* *'ESP-WROVER-KIT setup.md'*
+* **'ESP-WROVER-KIT setup.md'**
   describes the steps needed to get the ESP-WROVER-KIT with TFT and PS/2 keyboard
   support up and running. A small hardware modification is needed to be able using
   the TFT and the SD-Card in parallel.
 
-* *'reference-sleep-functions.md'*
+* **'reference-sleep-functions.md'**
   a description of the added light- and deepsleep uLisp functions.
   You can enable wakeup resources as you need for your project.
   
-* *'reference-tft-functions.md'* -- a description of uLisp functions depending the tft:
+* **'reference-tft-functions.md'** -- a description of uLisp functions depending the tft:
   * set foreground and background text colors
   * plot a pixel
   * get a pixel's color
   * scroll the display
   ...
 
-* *'reference-sd-card-functions.md'* -- uLisp functions depending on sd-card usage:
+* **'reference-sd-card-functions.md'** -- uLisp functions depending on sd-card usage:
   * (ls)    -- list directory (and all subdirectories)
   * (mkdir) -- create a new directory
   * (rmdir) -- remove an empty directory
@@ -41,11 +41,11 @@ Currently (April 2019) there are the following descriptions:
 ### Changelog ulisp 3.0a-esp (Kaef)
 
 * 2019-12.16: testing support for FabGl (VGA output & PS/2 keyboard library)
-  * not tested in combination with LARGE_WORKSPACE yet
+  * not tested in combination with LARGE_WORKSPACE (I will do this soon)
   * sdcard-support not tested
-  * backspace did not work in uLisp repl (but this should be possible writing a new repl in uLisp)
+  * backspace did not work in uLisp repl (but this should be possible writing a new repl in uLisp, see uLisp forum)
   * escape sequences for terminal modifications not tested (ie. setting text and background color, moving cursor etc,)
-* 2019-12-13: dropped ESP8266 support, because this makes the code complexer and I did not add any functions for the esp8266 
+* 2019-12-13: dropped ESP8266 support, because this makes the code more complex and I did not add any functions for the esp8266 
               Please use David's uLisp version for ESP8266.
 * 2019-12-12: updated to David's uLisp-3.0a
 
