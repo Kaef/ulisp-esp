@@ -16,6 +16,8 @@ Currently (April 2019) there are the following descriptions:
   support up and running. A small hardware modification is needed to be able using
   the TFT and the SD-Card in parallel.
 
+* **'GPIO-usage-ESP32-Wrover-Kit.md'** -- a list of used (and free) gpio pins
+
 * **'reference-sleep-functions.md'**
   a description of the added light- and deepsleep uLisp functions.
   You can enable wakeup resources as you need for your project.

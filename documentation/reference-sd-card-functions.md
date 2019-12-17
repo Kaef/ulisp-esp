@@ -1,7 +1,6 @@
 # sd-card functions
 
-* (ls) -- list directory
-  this function has just side effects, printing the file-list at screen
+* (ls) -- list directory -- this function has just side effects, printing the file-list at screen
 
   a later version may return a list of files (or list of (list of file, size))
 

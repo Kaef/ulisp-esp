@@ -1,8 +1,8 @@
 # TFT functions (ESP-WROVER-KIT only)
 
-The following functions may work with other displays too, but this is not tested yet.
+The following functions may work with other displays too, but this is not tested.
 
-* scroll
+* (scroll lines [background color565])
 
     scrolls display in y-direction upwards for given number of lines with given background color (565 format)
     ```
@@ -10,7 +10,7 @@ The following functions may work with other displays too, but this is not tested
     (scroll 100 987)  -- scroll 100 lines upwards, fill scrolled room with color 987
     ```
 
-* setCursor
+* (setCursor x y)
 
     sets the cursor to given position
     Origin (0 0) is the lower left corner.
@@ -18,7 +18,7 @@ The following functions may work with other displays too, but this is not tested
     (setCursor 100 200) -- sets the current cursor position to x=100, y=200
     ```
 
-* plot
+* (plot x y [color565])
 
     plots a point at position (x y) with color given in 565 format
     if no color given, the last used color will be used (defaults to white)
@@ -47,7 +47,7 @@ The following functions may work with other displays too, but this is not tested
     (setCursor 0 8))
     ```
 
-  * setTextColor
+  * (setTextColor forground-color565 [background-color565])
 
     Set's text foreground- and background-colors to the given colors.
     The colors must be given in 565 format, you can use the library function (color565 r g b)
@@ -56,7 +56,7 @@ The following functions may work with other displays too, but this is not tested
     (setTextColor (color565 255 255 0) (color565 0 0 255)) -- sets the color to yellow on blue
     ```
 
-* readPixel
+* (readPixel x y)
 
     reads the pixel color at position x, y; returns color565
   
