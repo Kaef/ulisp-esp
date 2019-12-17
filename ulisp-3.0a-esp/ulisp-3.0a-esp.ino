@@ -30,18 +30,18 @@
 // SETTINGS ADDED BY KAEF:
 //
 // ESP_WROVER_KIT: if defined include tft of ESP_WROVER_KIT
-#define ESP_WROVER_KIT
+//#define ESP_WROVER_KIT
 
 // PS2_KEYBOARD: if defined include ps/2 keyboard support
 // WARNING: This is for ESP_WROVER_KIT only!
 //          if you use FabGl don't define PS2_KEYBOARD here!
-#define PS2_KEYBOARD
+//#define PS2_KEYBOARD
 
 // LARGE_WORKSPACE: if defined use 4MB PSRAM for workspace
-#define LARGE_WORKSPACE        /* Kaef: large workspace patches */
+//#define LARGE_WORKSPACE        /* Kaef: large workspace patches */
 
 // USE_FABGL: use FabGl library with PS/2 Keyboard and VGA support:
-//#define USE_FABGL
+#define USE_FABGL
 /////////////////////////////////////////////////////////////////////
 //
 // detecting not possible feature combinations::
@@ -223,6 +223,16 @@ unsigned int WORKSPACESIZE = (16 * 1024) - SDSIZE;  /* Cells (8*bytes) */ /* Kae
 const gpio_num_t I2C_SCL = (gpio_num_t) GPIO_NUM_12; // (gpio_num_t) GPIO_NUM_22;
 const gpio_num_t I2C_SDA = (gpio_num_t) GPIO_NUM_4;  // (gpio_num_t) GPIO_NUM_21;
 
+#elif defined USE_FABGL
+
+#define SDCARD_CLK_IO    12 // Arduino standard: 18, WEMOS ESP32 WOVER: 14
+#define SDCARD_MISO_IO   13 // Arduino standard: 19, WEMOS ESP32 WOVER:  2
+#define SDCARD_MOSI_IO    9 // Arduino standard: 23, WEMOS ESP32 WOVER: 15
+#define SDCARD_SS_PIN    10 // Kaef            :  5, WEMOS ESP32 WOVER: 13
+// I2C Pins ('(gpio_num_t)-1' to use default pins):
+const gpio_num_t I2C_SCL = GPIO_NUM_6; //GPIO_NUM_22; // 22 = WROVER PIN 33 (esp32 wrover default gpio)
+const gpio_num_t I2C_SDA = GPIO_NUM_7; //GPIO_NUM_21; // 21 = WROVER PIN 36 (esp32 wrover default gpio)
+
 #else
 
 #define SDCARD_CLK_IO    14 // Arduino standard: 18, WEMOS ESP32 WOVER: 14
@@ -232,6 +242,7 @@ const gpio_num_t I2C_SDA = (gpio_num_t) GPIO_NUM_4;  // (gpio_num_t) GPIO_NUM_21
 // I2C Pins ('(gpio_num_t)-1' to use default pins):
 const gpio_num_t I2C_SCL = (gpio_num_t) - 1; //GPIO_NUM_22; // 22 = WROVER PIN 33 (esp32 wrover default gpio)
 const gpio_num_t I2C_SDA = (gpio_num_t) - 1; //GPIO_NUM_21; // 21 = WROVER PIN 36 (esp32 wrover default gpio)
+
 #endif
 
 
