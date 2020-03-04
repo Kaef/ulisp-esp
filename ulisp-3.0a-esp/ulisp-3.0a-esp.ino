@@ -15,7 +15,7 @@
 
 //#define resetautorun
 #define printfreespace
-//#define printfreesymbolspace
+#define printfreesymbolspace
 #define serialmonitor
 // #define printgcs
 #define sdcardsupport
@@ -38,10 +38,11 @@
 //#define PS2_KEYBOARD
 
 // LARGE_WORKSPACE: if defined use 4MB PSRAM for workspace
-//#define LARGE_WORKSPACE        /* Kaef: large workspace patches */
+#define LARGE_WORKSPACE        /* Kaef: large workspace patches */
 
 // USE_FABGL: use FabGl library with PS/2 Keyboard and VGA support:
 #define USE_FABGL
+#define TTGO_T8 /* use TTGO-T8 pin assignments */
 /////////////////////////////////////////////////////////////////////
 //
 // detecting not possible feature combinations::
@@ -52,9 +53,11 @@
 #if (defined PS2_KEYBOARD)
 #error "PS2_KEYBOARD and USE_FABGL should not be defined at the same time!"
 #endif
-#if (defined LARGE_WORKSPACE)
-#error "LARGE_WORKSPACE and USE_FABGL should not be defined at the same time!"
+
+#if (defined sdcardsupport)
+#warning "sdcardsupport and USE_FABGL: sdcard does not work @2019-12-30!"
 #endif
+
 #endif // USE_FABGL
 
 
@@ -98,6 +101,7 @@ extern "C" {
 #if defined(sdcardsupport)
 #include <SD.h>
 #define SDSIZE 172
+//SPIClass *spiClass = NULL; // used to choose VSPI (default) or HSPI
 #else
 #define SDSIZE 0
 #endif
@@ -205,7 +209,7 @@ const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024) / sizeof(object); /* K
 unsigned int WORKSPACESIZE = (16 * 1024) - SDSIZE;  /* Cells (8*bytes) */ /* Kaef PSRAM */
 #define EEPROMSIZE 4095                         /* Bytes available for EEPROM */
 #ifdef BOARD_HAS_PSRAM
-#define SYMBOLTABLESIZE 32*1024                 /* Bytes */
+#define SYMBOLTABLESIZE (32*1024)               /* Bytes */
 #else
 #define SYMBOLTABLESIZE 512                     /* Bytes */
 #endif // BOARD_HAS_PSRAM
@@ -214,6 +218,7 @@ unsigned int WORKSPACESIZE = (16 * 1024) - SDSIZE;  /* Cells (8*bytes) */ /* Kae
 
 // the names are a bit misleading: here, the gpio-nums has to be configured, not the pin nums!
 #ifdef ESP_WROVER_KIT
+#warning "Using ESP_WROVER_KIT sdcard & i2c pin setup..."
 #define SDCARD_CLK_IO    14 // ESP32-WROVER-KIT V4.1
 #define SDCARD_MISO_IO    2 // ESP32-WROVER-KIT V4.1
 #define SDCARD_MOSI_IO   15 // ESP32-WROVER-KIT V4.1
@@ -223,18 +228,19 @@ unsigned int WORKSPACESIZE = (16 * 1024) - SDSIZE;  /* Cells (8*bytes) */ /* Kae
 const gpio_num_t I2C_SCL = (gpio_num_t) GPIO_NUM_12; // (gpio_num_t) GPIO_NUM_22;
 const gpio_num_t I2C_SDA = (gpio_num_t) GPIO_NUM_4;  // (gpio_num_t) GPIO_NUM_21;
 
-#elif defined USE_FABGL
-
-#define SDCARD_CLK_IO    12 // Arduino standard: 18, WEMOS ESP32 WOVER: 14
-#define SDCARD_MISO_IO   13 // Arduino standard: 19, WEMOS ESP32 WOVER:  2
-#define SDCARD_MOSI_IO    9 // Arduino standard: 23, WEMOS ESP32 WOVER: 15
-#define SDCARD_SS_PIN    10 // Kaef            :  5, WEMOS ESP32 WOVER: 13
+#elif /*(defined USE_FABGL) &&*/ (defined TTGO_T8)
+// Pins defined for TTGO T8:
+#warning "Using TTGO-T8 sdcard & i2c pin setup..."
+#define SDCARD_CLK_IO    14
+#define SDCARD_MISO_IO    2
+#define SDCARD_MOSI_IO   15
+#define SDCARD_SS_PIN    13
 // I2C Pins ('(gpio_num_t)-1' to use default pins):
-const gpio_num_t I2C_SCL = GPIO_NUM_6; //GPIO_NUM_22; // 22 = WROVER PIN 33 (esp32 wrover default gpio)
-const gpio_num_t I2C_SDA = GPIO_NUM_7; //GPIO_NUM_21; // 21 = WROVER PIN 36 (esp32 wrover default gpio)
-
+const gpio_num_t I2C_SCL = GPIO_NUM_22; // 22 = WROVER PIN 33 (esp32 wrover default gpio)
+const gpio_num_t I2C_SDA = GPIO_NUM_21; // 21 = WROVER PIN 36 (esp32 wrover default gpio)
 #else
 
+#warning "Using standard sdcard & i2c pin setup..."
 #define SDCARD_CLK_IO    14 // Arduino standard: 18, WEMOS ESP32 WOVER: 14
 #define SDCARD_MISO_IO    2 // Arduino standard: 19, WEMOS ESP32 WOVER:  2
 #define SDCARD_MOSI_IO   15 // Arduino standard: 23, WEMOS ESP32 WOVER: 15
@@ -589,8 +595,7 @@ int EpromReadInt (int *addr) {
 unsigned int saveimage (object *arg) {
     unsigned int imagesize = compactimage(&arg);
 #if defined(sdcardsupport)
-    mySPIbegin(SDCARD_SS_PIN); // Kaef
-    SD.begin(SDCARD_SS_PIN);
+    mySDbegin(SDCARD_SS_PIN); // Kaef
     File file;
     if (stringp(arg)) {
         file = SD.open(MakeFilename(arg), FILE_WRITE);
@@ -655,8 +660,7 @@ int SDReadInt (File file) {
 
 unsigned int loadimage (object *arg) {
 #if defined(sdcardsupport)
-    mySPIbegin(SDCARD_SS_PIN);   // Kaef
-    SD.begin(SDCARD_SS_PIN);
+    mySDbegin(SDCARD_SS_PIN);   // Kaef
     File file;
     if (stringp(arg)) file = SD.open(MakeFilename(arg));
     else if (arg == NULL) file = SD.open("/ULISP.IMG");
@@ -706,7 +710,7 @@ void autorunimage () {
     if (digitalRead(0) == HIGH) { // Kaef: patch to not load workspace if button 0 is pressed
         // Kaef: END Block
 #if defined(sdcardsupport)
-        mySPIbegin(SDCARD_SS_PIN); // Kaef
+        mySDbegin(SDCARD_SS_PIN); // Kaef
         File file = SD.open("/ULISP.IMG");
         if (!file) error2(0, PSTR("problem autorunning from SD card"));
         object *autorun = (object *)SDReadInt(file);
@@ -1764,14 +1768,18 @@ object *sp_withi2c (object *args, object *env) {
 
 // Kaef: BEG Block
 
-void mySPIbegin (int sdcardSSPin) {
+bool mySDbegin (int sdcardSSPin) {
 #if ((defined SDCARD_CLK_IO) && (defined SDCARD_MISO_IO) && (defined SDCARD_MOSI_IO))
-    SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, sdcardSSPin);
+    SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, -1);
+    //spiClass->begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, -1);
 #else
     SPI.begin(sdcardSSPin);
+    //spiClass->begin(sdcardSSPin);
     pfstring(PSTR("*** WARNING SPI: not all gpios defined, using arduino standard SPI GPIOs! ***"), pserial);
     pln(pserial);
 #endif
+    pinMode(sdcardSSPin, OUTPUT);
+    return SD.begin(sdcardSSPin); // , *spiClass);
 }
 // Kaef: END Block
 
@@ -1801,7 +1809,7 @@ object *sp_withspi (object *args, object *env) {
     }
     object *pair = cons(var, stream(SPISTREAM, pin));
     push(pair, env);
-    mySPIbegin (SDCARD_SS_PIN);
+    mySDbegin (SDCARD_SS_PIN);
     SPI.beginTransaction(SPISettings(((unsigned long)clock * 1000), bitorder, mode));
     digitalWrite(pin, LOW);
     SPI.setBitOrder((BitOrder)bitorder);
@@ -1820,8 +1828,7 @@ object *sp_withsdcard (object *args, object *env) {
     object *var = first(params);
     object *filename = eval(second(params), env);
     params = cddr(params);
-    mySPIbegin(SDCARD_SS_PIN);  // Kaef
-    SD.begin(SDCARD_SS_PIN);
+    mySDbegin(SDCARD_SS_PIN);  // Kaef
     int mode = 0;
     if (params != NULL && first(params) != NULL) mode = checkinteger(WITHSDCARD, first(params));
     const char *oflag = FILE_READ;
@@ -5047,11 +5054,10 @@ void listDir (const char * dirname, uint8_t curDirLevel) {
 
 void sd_test () {
 #ifdef sdcardsupport
-    mySPIbegin(SDCARD_SS_PIN);
     //pfstring(PSTR("  SDCARD_SS_PIN: "), pserial); pint(SDCARD_SS_PIN, pserial);
 
-    if (!SD.begin(SDCARD_SS_PIN)) {
-        pfstring(PSTR("    ** Card Mount Failed! **"), pserial);
+    if (!mySDbegin(SDCARD_SS_PIN)) {
+        pfstring(PSTR("    ** Card Mount Failed! **"), pserial); pln(pserial);
         return;
     }
     uint32_t cardSize = SD.cardSize() / (1024 * 1024);
@@ -5123,6 +5129,9 @@ void welcomeMessage () {
 #ifdef ESP_WROVER_KIT
     pfstring(PSTR("ESP-WROVER-KIT"), pserial);
 #endif
+#ifdef TTGO_T8
+    pfstring(PSTR("ESP32-TTGO_T8"), pserial);
+#endif
     pln(pserial);
     pfstring(PSTR("    reset reason: "), pserial); pint(rtc_get_reset_reason(0), pserial); pln(pserial);
     pfstring(PSTR("    wakeup cause: "), pserial); pint(esp_sleep_get_wakeup_cause(), pserial);
@@ -5170,9 +5179,19 @@ void printFabglInfo()
 
 void setupFabGl()
 {
-    Serial.println(PSTR(__FUNCTION__));
+    Serial.println(); Serial.println(PSTR(__FUNCTION__));
+    // using std keyboard ports clk = GPIO_NUM_33, data = GPIO_NUM_32:
     PS2Controller.begin(PS2Preset::KeyboardPort0);
+    // OR using custumized gpios: (Kaef, 30.12.2019: doesn't work, boot-loop)
+    //PS2Controller.begin(GPIO_NUM_33, GPIO_NUM_32);
+#ifdef TTGO_T8
+    // use 8 colors
+    Serial.println(PSTR("8 color mode setup: R:25, G:26, B:27, H:5, V:23"));
+    VGAController.begin(GPIO_NUM_25, GPIO_NUM_26, GPIO_NUM_27, GPIO_NUM_5, GPIO_NUM_23);
+#else
+    Serial.println(PSTR("64 color mode setup: standard VGA32 pins used"));
     VGAController.begin(); // default: 22, 21: red; 19, 18: green; 5, 4: blue; 23: hsync; 15: vsync
+#endif    
     // use 8 colors: TODO: use gpios not used for anything else
     //VGAController.begin(GPIO_NUM_27, GPIO_NUM_26, GPIO_NUM_25, GPIO_NUM_4, GPIO_NUM_12);
     if (psramFound()) {
@@ -5219,6 +5238,7 @@ void setup () {
     while ((millis() - start) < 5000) {
         if (Serial) break;
     }
+    //spiClass = new SPIClass(HSPI);
 #ifdef ESP_WROVER_KIT
     setupWroverKit();
 #endif
