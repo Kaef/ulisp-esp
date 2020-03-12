@@ -5192,12 +5192,12 @@ void setupFabGl()
     Serial.println(PSTR("64 color mode setup: standard VGA32 pins used"));
     VGAController.begin(); // default: 22, 21: red; 19, 18: green; 5, 4: blue; 23: hsync; 15: vsync
 #endif    
-    // use 8 colors: TODO: use gpios not used for anything else
-    //VGAController.begin(GPIO_NUM_27, GPIO_NUM_26, GPIO_NUM_25, GPIO_NUM_4, GPIO_NUM_12);
     if (psramFound()) {
-        //#ifdef BOARD_HAS_PSRAM
+        Serial.println(PSTR("psramFound!"));
         //VGAController.setResolution(VGA_640x350_70HzAlt1); // Kaef: UNTESTED!!
-        VGAController.setResolution(VGA_640x240_60Hz);
+        // Kaef, 2020-03-12: if too much memory is used here the sdcard mounting will fail...
+        //VGAController.setResolution(VGA_640x240_60Hz);
+        VGAController.setResolution(VGA_640x200_70Hz); // this saves a lot of memory (+3k cells vs 640x240)
         // adjust screen position and size
         VGAController.shrinkScreen(2, 2);
         VGAController.moveScreen(-5, 0);
@@ -5207,18 +5207,12 @@ void setupFabGl()
         // adjust screen position and size
         VGAController.shrinkScreen(2, 2);
         VGAController.moveScreen(-5, 0);
-        /* *
             //VGAController.setResolution(VGA_640x200_70Hz); // this saves a lot of memory (+3k cells vs 640x240)
             // adjust screen position and size
-            VGAController.shrinkScreen(0, 2);
-            VGAController.moveScreen(0, 0);
-            // */
+            //VGAController.shrinkScreen(0, 2);
+            //VGAController.moveScreen(0, 0);
         //VGAController.setResolution(VGA_400x300_60Hz); // saves even more RAM
     }
-    //#endif
-    // adjust screen position and size
-    //VGAController.shrinkScreen(5, 0);
-    //VGAController.moveScreen(-1, 0);
 
     Terminal.begin(&VGAController);
     Terminal.connectLocally();      // to use Terminal.read(), available(), etc..
@@ -5249,7 +5243,6 @@ void setup () {
     setupFabGl();
 #endif
     welcomeMessage(); // Kaef
-
     initworkspace();
     initenv();
     initsleep();
