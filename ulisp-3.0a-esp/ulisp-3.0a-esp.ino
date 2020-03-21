@@ -204,12 +204,12 @@ typedef int PinMode;
 #define WORDALIGNED __attribute__((aligned (4)))
 #define BUFFERSIZE 34  // Number of bits+2
 
-const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024) / sizeof(object); /* Kaef PSRAM */
 // V-3.0a: if board has no psram WORKSPACESIZE will be reduced until calloc() was successful (setupWorkspace()):
+const unsigned int PSRAMWORKSPACESIZE = (4 * 1024 * 1024) / sizeof(object); /* Kaef PSRAM */
 unsigned int WORKSPACESIZE = (16 * 1024) - SDSIZE;  /* Cells (8*bytes) */ /* Kaef PSRAM */
 #define EEPROMSIZE 4095                         /* Bytes available for EEPROM */
 #ifdef BOARD_HAS_PSRAM
-#define SYMBOLTABLESIZE (32*1024)               /* Bytes */
+#define SYMBOLTABLESIZE (12*1024)               /* Bytes */
 #else
 #define SYMBOLTABLESIZE 512                     /* Bytes */
 #endif // BOARD_HAS_PSRAM
@@ -1768,6 +1768,7 @@ object *sp_withi2c (object *args, object *env) {
 
 // Kaef: BEG Block
 
+#ifdef sdcardsupport
 bool mySDbegin (int sdcardSSPin) {
 #if ((defined SDCARD_CLK_IO) && (defined SDCARD_MISO_IO) && (defined SDCARD_MOSI_IO))
     SPI.begin(SDCARD_CLK_IO, SDCARD_MISO_IO, SDCARD_MOSI_IO, -1);
@@ -1781,6 +1782,7 @@ bool mySDbegin (int sdcardSSPin) {
     pinMode(sdcardSSPin, OUTPUT);
     return SD.begin(sdcardSSPin); // , *spiClass);
 }
+#endif
 // Kaef: END Block
 
 object *sp_withspi (object *args, object *env) {
@@ -1809,7 +1811,6 @@ object *sp_withspi (object *args, object *env) {
     }
     object *pair = cons(var, stream(SPISTREAM, pin));
     push(pair, env);
-    mySDbegin (SDCARD_SS_PIN);
     SPI.beginTransaction(SPISettings(((unsigned long)clock * 1000), bitorder, mode));
     digitalWrite(pin, LOW);
     SPI.setBitOrder((BitOrder)bitorder);
@@ -3214,8 +3215,7 @@ object *fn_room (object *args, object *env) {
 
     unsigned int freeSymbolspace = SYMBOLTABLESIZE - (int)(SymbolTop - SymbolTable);
     pfstring(PSTR("free symbolspace: "), pserial);
-    pint(freeSymbolspace / 1024, pserial); pfstring(PSTR("k ("),  pserial);
-    pint(freeSymbolspace, pserial); pfstring(PSTR(")"),  pserial); pln(pserial);
+    pint(freeSymbolspace, pserial); pfstring(PSTR(" Byte"),  pserial); pln(pserial);
 
     return number(Freespace);
 }
@@ -5191,28 +5191,17 @@ void setupFabGl()
 #else
     Serial.println(PSTR("64 color mode setup: standard VGA32 pins used"));
     VGAController.begin(); // default: 22, 21: red; 19, 18: green; 5, 4: blue; 23: hsync; 15: vsync
-#endif    
-    if (psramFound()) {
-        Serial.println(PSTR("psramFound!"));
-        //VGAController.setResolution(VGA_640x350_70HzAlt1); // Kaef: UNTESTED!!
-        // Kaef, 2020-03-12: if too much memory is used here the sdcard mounting will fail...
-        //VGAController.setResolution(VGA_640x240_60Hz);
-        VGAController.setResolution(VGA_640x200_70Hz); // this saves a lot of memory (+3k cells vs 640x240)
-        // adjust screen position and size
-        VGAController.shrinkScreen(2, 2);
-        VGAController.moveScreen(-5, 0);
-    } else {
-        //#else
-        VGAController.setResolution(VGA_640x240_60Hz); // this saves a lot of memory (+5k cells vs 640x350)
-        // adjust screen position and size
-        VGAController.shrinkScreen(2, 2);
-        VGAController.moveScreen(-5, 0);
-            //VGAController.setResolution(VGA_640x200_70Hz); // this saves a lot of memory (+3k cells vs 640x240)
-            // adjust screen position and size
-            //VGAController.shrinkScreen(0, 2);
-            //VGAController.moveScreen(0, 0);
-        //VGAController.setResolution(VGA_400x300_60Hz); // saves even more RAM
-    }
+    // Using other GPIOs:
+    //VGAController.begin(GPIO_NUM_27, GPIO_NUM_12, GPIO_NUM_19, GPIO_NUM_18, GPIO_NUM_5, GPIO_NUM_4, GPIO_NUM_23, GPIO_NUM_25);
+#endif
+
+    //VGAController.setResolution(VGA_640x350_70HzAlt1); // Kaef: UNTESTED!!
+    // Kaef, 2020-03-12: if too much memory is used here the sdcard mounting will fail...
+    VGAController.setResolution(VGA_640x240_60Hz);
+    //VGAController.setResolution(VGA_640x200_70Hz); // this saves a lot of memory (+3k cells vs 640x240)
+    // adjust screen position and size
+    VGAController.shrinkScreen(2, 2);
+    VGAController.moveScreen(-5, 0);
 
     Terminal.begin(&VGAController);
     Terminal.connectLocally();      // to use Terminal.read(), available(), etc..
